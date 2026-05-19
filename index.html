@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RBX Store — Top Up via Gamepass</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060608;
+    --s1: #0e0e14;
+    --s2: #14141e;
+    --s3: #1a1a28;
+    --border: #252535;
+    --border2: #2e2e45;
+    --accent: #7c5cfc;
+    --accent-glow: rgba(124,92,252,0.25);
+    --accent2: #fc5c7d;
+    --gold: #ffc857;
+    --green: #39d98a;
+    --text: #eeeef5;
+    --muted: #6464808;
+    --muted: #636380;
+  }
+
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated bg */
+  .bg-fx {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    overflow: hidden;
+  }
+  .bg-fx::before {
+    content: '';
+    position: absolute;
+    top: -30%; left: -20%;
+    width: 70%; height: 70%;
+    background: radial-gradient(ellipse, rgba(124,92,252,0.08) 0%, transparent 65%);
+    animation: bgFloat 8s ease-in-out infinite alternate;
+  }
+  .bg-fx::after {
+    content: '';
+    position: absolute;
+    bottom: -20%; right: -10%;
+    width: 60%; height: 60%;
+    background: radial-gradient(ellipse, rgba(252,92,125,0.06) 0%, transparent 65%);
+    animation: bgFloat 10s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes bgFloat { from{transform:translate(0,0)} to{transform:translate(3%,4%)} }
+
+  /* Grid lines */
+  .grid-fx {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(124,92,252,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,92,252,0.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  .wrapper { position: relative; z-index: 1; }
+
+  /* ===== HEADER ===== */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 36px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(6,6,8,0.85);
+    backdrop-filter: blur(20px);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 1.35rem;
+    letter-spacing: -1px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-gem {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .logo-text { color: var(--text); }
+  .logo-text em { font-style: normal; color: var(--accent); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(57,217,138,0.08);
+    border: 1px solid rgba(57,217,138,0.2);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.7rem;
+    color: var(--green);
+    letter-spacing: 0.5px;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+  /* ===== HERO ===== */
+  .hero {
+    max-width: 680px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 64px 20px 32px;
+    animation: heroIn 0.6s ease both;
+  }
+  @keyframes heroIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 0.68rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(124,92,252,0.3);
+    background: rgba(124,92,252,0.06);
+    padding: 6px 18px;
+    border-radius: 20px;
+    margin-bottom: 22px;
+  }
+
+  .hero h1 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.2rem, 5.5vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 16px;
+  }
+  .hero h1 .g1 { color: var(--accent); }
+  .hero h1 .g2 {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .hero p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.8;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ===== HOW IT WORKS ===== */
+  .how-section {
+    max-width: 860px;
+    margin: 0 auto 10px;
+    padding: 0 20px;
+  }
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  @media(max-width:650px) { .how-grid { grid-template-columns: repeat(2,1fr); } }
+
+  .how-step {
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 14px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: cardIn 0.5s ease both;
+  }
+  .how-step:nth-child(1){animation-delay:0.1s}
+  .how-step:nth-child(2){animation-delay:0.2s}
+  .how-step:nth-child(3){animation-delay:0.3s}
+  .how-step:nth-child(4){animation-delay:0.4s}
+  @keyframes cardIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  .how-step:hover { border-color: rgba(124,92,252,0.4); transform: translateY(-3px); }
+  .how-num {
+    position: absolute; top: 10px; right: 12px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: rgba(124,92,252,0.12);
+    line-height: 1;
+  }
+  .how-icon { font-size: 1.6rem; margin-bottom: 10px; display: block; }
+  .how-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+    color: var(--text);
+  }
+  .how-desc { font-size: 0.68rem; color: var(--muted); line-height: 1.5; }
+
+  /* ===== MAIN LAYOUT ===== */
+  .main {
+    max-width: 960px;
+    margin: 20px auto 0;
+    padding: 0 20px 80px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+    align-items: start;
+  }
+  @media(max-width:720px) { .main { grid-template-columns: 1fr; } }
+
+  /* ===== CARD ===== */
+  .card {
+    background: var(--s1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border2); }
+
+  .card-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+  }
+  .card-head-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(252,92,125,0.1));
+    border: 1px solid rgba(124,92,252,0.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .card-head-text {}
+  .card-head-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .card-head-sub { font-size: 0.67rem; color: var(--muted); margin-top: 2px; }
+
+  /* ===== PACKAGE GRID ===== */
+  .pkg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+  }
+  @media(max-width:480px) { .pkg-grid { grid-template-columns: repeat(2,1fr); } }
+
+  .pkg {
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: 14px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+  .pkg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(124,92,252,0.08), transparent);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .pkg:hover::before { opacity: 1; }
+  .pkg:hover { border-color: rgba(124,92,252,0.45); transform: translateY(-2px); }
+  .pkg.selected {
+    border-color: var(--accent);
+    background: rgba(124,92,252,0.08);
+    box-shadow: 0 0 24px rgba(124,92,252,0.15), inset 0 0 0 1px rgba(124,92,252,0.3);
+  }
+  .pkg.selected::after {
+    content: '✓';
+    position: absolute; top: 7px; right: 9px;
+    width: 16px; height: 16px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.55rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .pkg.hot .hot-tag {
+    display: block;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 0 0 6px 6px;
+    text-transform: uppercase;
+  }
+  .hot-tag { display: none; }
+  .pkg-emoji { font-size: 1.3rem; display: block; margin-bottom: 7px; }
+  .pkg-amount {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .pkg-price { font-size: 0.72rem; color: var(--accent); }
+  .pkg-bonus { font-size: 0.62rem; color: var(--green); margin-top: 3px; }
+
+  /* ===== INPUTS ===== */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .field label .req { color: var(--accent2); }
+
+  .input-wrap { position: relative; }
+  .input-wrap input {
+    width: 100%;
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,92,252,0.1);
+  }
+  .input-wrap input::placeholder { color: rgba(100,100,128,0.6); }
+
+  .input-suffix {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 0.7rem; color: var(--muted);
+    pointer-events: none;
+  }
+  .input-hint {
+    font-size: 0.66rem;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.5;
+    display: flex; align-items: flex-start; gap: 5px;
+  }
+
+  /* ===== GAMEPASS INFO BOX ===== */
+  .gamepass-guide {
+    background: linear-gradient(135deg, rgba(124,92,252,0.06), rgba(252,92,125,0.04));
+    border: 1px solid rgba(124,92,252,0.2);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .gp-guide-title {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .gp-steps {
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .gp-step {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 0.72rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .gp-step-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(124,92,252,0.15);
+    border: 1px solid rgba(124,92,252,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem;
+    color: var(--accent);
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  /* ===== GAMEPASS INPUT SPECIAL ===== */
+  .gp-input-box {
+    background: var(--s2);
+    border: 1px dashed rgba(124,92,252,0.4);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .gp-url-row {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .gp-url-row input {
+    flex: 1;
+    background: var(--s3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 13px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .gp-url-row input:focus { border-color: var(--accent); }
+  .gp-url-row input::placeholder { color: rgba(100,100,128,0.5); }
+  .btn-extract {
+    background: linear-gradient(135deg, var(--accent), #5b3de8);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    font-weight: 600;
+  }
+  .btn-extract:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(124,92,252,0.3); }
+
+  .gp-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.65rem; color: var(--muted); letter-spacing: 1px;
+  }
+  .gp-divider::before,.gp-divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--border);
+  }
+
+  .gp-id-input {
+    width: 100%;
+    background: var(--s3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 13px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 1px;
+  }
+  .gp-id-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,92,252,0.1); }
+  .gp-id-input::placeholder { color: rgba(100,100,128,0.5); }
+
+  /* Gamepass preview card */
+  .gp-preview {
+    display: none;
+    background: var(--s3);
+    border: 1px solid rgba(57,217,138,0.25);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  .gp-preview.show { display: flex; gap: 12px; align-items: center; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .gp-prev-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(124,92,252,0.2), rgba(252,92,125,0.15));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .gp-prev-info { flex: 1; }
+  .gp-prev-name {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 3px;
+    color: var(--text);
+  }
+  .gp-prev-id { font-size: 0.68rem; color: var(--muted); }
+  .gp-prev-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(57,217,138,0.1);
+    border: 1px solid rgba(57,217,138,0.3);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.65rem;
+    color: var(--green);
+    margin-top: 5px;
+  }
+
+  /* ===== PAYMENT ===== */
+  .pay-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .pay-btn {
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    user-select: none;
+  }
+  .pay-btn:hover { border-color: rgba(124,92,252,0.4); }
+  .pay-btn.selected { border-color: var(--accent); background: rgba(124,92,252,0.07); }
+  .pay-icon { font-size: 1.2rem; display: block; margin-bottom: 5px; }
+  .pay-name { font-size: 0.7rem; color: var(--muted); }
+  .pay-btn.selected .pay-name { color: var(--accent); }
+
+  /* ===== SUMMARY ===== */
+  .summary {
+    background: var(--s1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    position: sticky; top: 80px;
+  }
+  .sum-head {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .rbx-display {
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .rbx-display::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(124,92,252,0.06), rgba(252,92,125,0.04));
+  }
+  .rbx-display > * { position: relative; }
+  .rbx-big {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 2.4rem;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, var(--gold), #ffa040);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .rbx-sub { font-size: 0.68rem; color: var(--muted); }
+
+  /* Gamepass mini display in summary */
+  .gp-sum-box {
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 11px 13px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.75rem;
+  }
+  .gp-sum-icon { font-size: 1.1rem; }
+  .gp-sum-info { flex: 1; }
+  .gp-sum-label { color: var(--muted); font-size: 0.63rem; text-transform: uppercase; letter-spacing: 1px; }
+  .gp-sum-val {
+    font-family: 'Outfit', sans-serif; font-weight: 700;
+    color: var(--text); font-size: 0.82rem;
+    margin-top: 2px;
+  }
+  .gp-sum-val.empty { color: var(--muted); font-weight: 400; font-family: inherit; }
+
+  .sum-row {
+    display: flex; justify-content: space-between;
+    font-size: 0.77rem;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+  .sum-row .k { color: var(--muted); }
+  .sum-row .v { font-family: 'Outfit', sans-serif; font-weight: 600; }
+  .sum-divider { height: 1px; background: var(--border); margin: 12px 0; }
+  .sum-total {
+    display: flex; justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .sum-total .k { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.85rem; }
+  .sum-total .v {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 1.3rem;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  /* Pending notice */
+  .pend-box {
+    background: rgba(255,200,87,0.06);
+    border: 1px solid rgba(255,200,87,0.2);
+    border-radius: 9px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 0.7rem;
+    color: var(--gold);
+    line-height: 1.6;
+    display: flex; gap: 8px;
+  }
+
+  /* ===== ORDER BUTTON ===== */
+  .btn-order {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent) 0%, #5b3de8 50%, var(--accent2) 100%);
+    background-size: 200% 200%;
+    animation: gradShift 4s ease infinite;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 15px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  @keyframes gradShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+  .btn-order::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transform: translateX(-100%);
+  }
+  .btn-order:hover::before { animation: shimmer 0.6s ease; }
+  @keyframes shimmer { to{transform:translateX(100%)} }
+  .btn-order:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(124,92,252,0.35); }
+  .btn-order:disabled {
+    background: var(--s2); color: var(--muted);
+    animation: none; cursor: not-allowed;
+    transform: none; box-shadow: none;
+    border: 1px solid var(--border);
+  }
+
+  .sum-footnote {
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 12px;
+    line-height: 1.7;
+  }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(10px);
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--s1);
+    border: 1px solid var(--border2);
+    border-radius: 18px;
+    padding: 36px 28px;
+    max-width: 440px; width: 100%;
+    text-align: center;
+    animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    position: relative;
+    overflow: hidden;
+  }
+  .modal::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  @keyframes modalPop { from{opacity:0;transform:scale(0.85) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+  .modal-icon-big { font-size: 4rem; margin-bottom: 14px; display: block; animation: iconBounce 0.6s 0.3s ease both; }
+  @keyframes iconBounce { from{transform:scale(0)} to{transform:scale(1)} }
+
+  .modal h2 {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,200,87,0.1);
+    border: 1px solid rgba(255,200,87,0.3);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 0.72rem;
+    color: var(--gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+
+  .modal-progress {
+    width: 100%; height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .modal-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--gold));
+    background-size: 200% 100%;
+    animation: progAnim 1.8s ease-in-out infinite alternate, gradMove 3s linear infinite;
+    border-radius: 3px;
+    width: 55%;
+  }
+  @keyframes progAnim { from{width:25%} to{width:75%} }
+  @keyframes gradMove { from{background-position:0%} to{background-position:200%} }
+
+  .modal-desc {
+    font-size: 0.78rem; color: var(--muted); line-height: 1.7; margin-bottom: 20px;
+  }
+
+  .order-box {
+    background: var(--s2);
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 18px;
+  }
+  .order-box-label { font-size: 0.62rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .order-id-val {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    font-size: 1.2rem;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .modal-meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 20px;
+  }
+  .meta-box {
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px;
+    text-align: left;
+  }
+  .meta-box .ml { font-size: 0.6rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .meta-box .mv { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.85rem; }
+  .meta-box .mv.gold { color: var(--gold); }
+  .meta-box .mv.green { color: var(--green); }
+  .meta-box .mv.purple { color: var(--accent); }
+
+  /* Gamepass in modal */
+  .modal-gp-box {
+    background: linear-gradient(135deg, rgba(124,92,252,0.08), rgba(252,92,125,0.05));
+    border: 1px solid rgba(124,92,252,0.25);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+    text-align: left;
+  }
+  .modal-gp-emoji { font-size: 2rem; }
+  .modal-gp-info { flex: 1; }
+  .modal-gp-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; }
+  .modal-gp-id { font-size: 0.68rem; color: var(--muted); }
+  .modal-gp-status {
+    background: rgba(57,217,138,0.1);
+    border: 1px solid rgba(57,217,138,0.25);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.62rem;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+
+  .btn-wa {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%;
+    background: #25d366; color: #fff;
+    border: none; border-radius: 9px;
+    padding: 13px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700; font-size: 0.82rem;
+    cursor: pointer; margin-bottom: 9px;
+    transition: all 0.2s;
+  }
+  .btn-wa:hover { background: #1db857; transform: translateY(-1px); }
+
+  .btn-close {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-close:hover { border-color: var(--border2); color: var(--text); }
+
+  /* ===== TRUST BAR ===== */
+  .trust {
+    display: flex; justify-content: center; align-items: center;
+    gap: 24px; flex-wrap: wrap;
+    padding: 0 20px 50px;
+  }
+  .trust-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.68rem; color: var(--muted);
+  }
+  .trust-item .ti { font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="bg-fx"></div>
+<div class="grid-fx"></div>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-gem">💎</div>
+      <div class="logo-text">RBX<em>Store</em></div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        Online 24/7
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">🎮 Sistem Gamepass</div>
+    <h1>Top Up <span class="g2">Robux</span><br>via <span class="g1">Gamepass</span></h1>
+    <p>Kirim ID gamepass kamu → kami beli → Robux masuk otomatis. Cara paling aman tanpa perlu login akun.</p>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="how-section">
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <span class="how-icon">🛒</span>
+        <div class="how-title">Buat Gamepass</div>
+        <div class="how-desc">Buat gamepass di Roblox Studio dengan harga sesuai Robux yang kamu inginkan</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <span class="how-icon">🔗</span>
+        <div class="how-title">Kirim ID</div>
+        <div class="how-desc">Masukkan link atau ID gamepass ke form di bawah, kami akan verifikasi</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <span class="how-icon">💸</span>
+        <div class="how-title">Bayar ke Kami</div>
+        <div class="how-desc">Lakukan pembayaran sesuai paket. Kami akan membeli gamepass dari akunmu</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <span class="how-icon">💎</span>
+        <div class="how-title">Robux Masuk!</div>
+        <div class="how-desc">Robux langsung masuk ke akun Roblox kamu dalam 5–30 menit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div>
+
+      <!-- PAKET -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-icon">💰</div>
+          <div class="card-head-text">
+            <div class="card-head-title">Pilih Jumlah Robux</div>
+            <div class="card-head-sub">Harga gamepass harus sesuai jumlah yang dipilih</div>
+          </div>
+        </div>
+        <div class="pkg-grid">
+          <div class="pkg" onclick="selectPkg(this,80,8000)">
+            <span class="pkg-emoji">🪙</span>
+            <div class="pkg-amount">80 R$</div>
+            <div class="pkg-price">Rp 8.000</div>
+          </div>
+          <div class="pkg" onclick="selectPkg(this,160,15000)">
+            <span class="pkg-emoji">🪙</span>
+            <div class="pkg-amount">160 R$</div>
+            <div class="pkg-price">Rp 15.000</div>
+            <div class="pkg-bonus">+bonus 10%</div>
+          </div>
+          <div class="pkg hot" onclick="selectPkg(this,450,40000)">
+            <div class="hot-tag">POPULER</div>
+            <span class="pkg-emoji" style="margin-top:10px">💰</span>
+            <div class="pkg-amount">450 R$</div>
+            <div class="pkg-price">Rp 40.000</div>
+            <div class="pkg-bonus">+bonus 15%</div>
+          </div>
+          <div class="pkg" onclick="selectPkg(this,1000,85000)">
+            <span class="pkg-emoji">💎</span>
+            <div class="pkg-amount">1.000 R$</div>
+            <div class="pkg-price">Rp 85.000</div>
+            <div class="pkg-bonus">+bonus 20%</div>
+          </div>
+          <div class="pkg" onclick="selectPkg(this,2750,220000)">
+            <span class="pkg-emoji">🏆</span>
+            <div class="pkg-amount">2.750 R$</div>
+            <div class="pkg-price">Rp 220.000</div>
+            <div class="pkg-bonus">+bonus 25%</div>
+          </div>
+          <div class="pkg" onclick="selectPkg(this,10000,750000)">
+            <span class="pkg-emoji">👑</span>
+            <div class="pkg-amount">10.000 R$</div>
+            <div class="pkg-price">Rp 750.000</div>
+            <div class="pkg-bonus">+bonus 30%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAMEPASS ID -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-icon">🎫</div>
+          <div class="card-head-text">
+            <div class="card-head-title">ID Gamepass Kamu</div>
+            <div class="card-head-sub">Buat gamepass dengan harga sesuai paket yang dipilih</div>
+          </div>
+        </div>
+
+        <div class="gamepass-guide">
+          <div class="gp-guide-title">📖 Cara Membuat Gamepass</div>
+          <div class="gp-steps">
+            <div class="gp-step">
+              <div class="gp-step-num">1</div>
+              <div>Buka <strong>Roblox Studio</strong> → pilih game kamu → klik tab <strong>View</strong> → <strong>Game Explorer</strong></div>
+            </div>
+            <div class="gp-step">
+              <div class="gp-step-num">2</div>
+              <div>Klik kanan <strong>Game Passes</strong> → <strong>Add Game Pass</strong>, beri nama bebas</div>
+            </div>
+            <div class="gp-step">
+              <div class="gp-step-num">3</div>
+              <div>Set harga gamepass sesuai paket yang dipilih (misal 450 R$ untuk paket 450 R$)</div>
+            </div>
+            <div class="gp-step">
+              <div class="gp-step-num">4</div>
+              <div>Salin link gamepass atau ID-nya (angka di URL), lalu paste di bawah</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gp-input-box">
+          <div class="gp-url-row">
+            <input type="text" id="gp-url" placeholder="https://www.roblox.com/game-pass/123456789/..." oninput="parseGamepassUrl()">
+            <button class="btn-extract" onclick="extractAndVerify()">Verifikasi</button>
+          </div>
+          <div class="gp-divider">ATAU masukkan ID langsung</div>
+          <input type="text" class="gp-id-input" id="gp-id" placeholder="Contoh: 123456789" oninput="onIdInput()">
+
+          <div class="gp-preview" id="gp-preview">
+            <div class="gp-prev-icon">🎫</div>
+            <div class="gp-prev-info">
+              <div class="gp-prev-name" id="gp-prev-name">Top Up Package</div>
+              <div class="gp-prev-id">ID: <span id="gp-prev-id-val">—</span></div>
+              <div class="gp-prev-badge">
+                <span>✓</span> Gamepass terdeteksi
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-icon">👤</div>
+          <div class="card-head-text">
+            <div class="card-head-title">Data Akun</div>
+            <div class="card-head-sub">Verifikasi pemilik gamepass</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Username Roblox <span class="req">*</span></label>
+          <div class="input-wrap">
+            <input type="text" id="username" placeholder="Username akun pemilik gamepass..." oninput="updateSummary()">
+          </div>
+          <div class="input-hint">⚠️ Harus sama dengan pemilik gamepass yang dibuat</div>
+        </div>
+        <div class="field">
+          <label>WhatsApp / Email <span class="req">*</span></label>
+          <div class="input-wrap">
+            <input type="text" id="contact" placeholder="Untuk notifikasi & konfirmasi...">
+          </div>
+        </div>
+      </div>
+
+      <!-- PAYMENT -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-icon">💳</div>
+          <div class="card-head-text">
+            <div class="card-head-title">Metode Pembayaran</div>
+            <div class="card-head-sub">Bayar ke kami, kami beli gampass kamu</div>
+          </div>
+        </div>
+        <div class="pay-grid" style="grid-template-columns: repeat(3,1fr)">
+          <div class="pay-btn" onclick="selectPay(this,'DANA')">
+            <span class="pay-icon">🔵</span>
+            <div class="pay-name">DANA</div>
+          </div>
+          <div class="pay-btn" onclick="selectPay(this,'GoPay')">
+            <span class="pay-icon">🟢</span>
+            <div class="pay-name">GoPay</div>
+          </div>
+          <div class="pay-btn" onclick="selectPay(this,'QRIS')">
+            <span class="pay-icon">📱</span>
+            <div class="pay-name">QRIS</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SUMMARY SIDEBAR -->
+    <div>
+      <div class="summary">
+        <div class="sum-head">📋 Ringkasan Order</div>
+
+        <div class="rbx-display">
+          <div class="rbx-big" id="sum-rbx">— R$</div>
+          <div class="rbx-sub">Robux yang akan kamu terima</div>
+        </div>
+
+        <!-- Gamepass summary -->
+        <div class="gp-sum-box">
+          <div class="gp-sum-icon">🎫</div>
+          <div class="gp-sum-info">
+            <div class="gp-sum-label">ID Gamepass</div>
+            <div class="gp-sum-val empty" id="sum-gpid">Belum diisi</div>
+          </div>
+        </div>
+
+        <div class="pend-box">
+          ⏳ Robux masuk <strong>5–30 menit</strong> setelah pembayaran. Status: <strong>PENDING</strong>
+        </div>
+
+        <div class="sum-row"><span class="k">Paket</span><span class="v" id="sum-pkg">—</span></div>
+        <div class="sum-row"><span class="k">Username</span><span class="v" id="sum-user">—</span></div>
+        <div class="sum-row"><span class="k">Metode Bayar</span><span class="v" id="sum-pay">—</span></div>
+        <div class="sum-row"><span class="k">Biaya Admin</span><span class="v">Rp 0</span></div>
+        <div class="sum-divider"></div>
+        <div class="sum-total">
+          <span class="k">Total Bayar</span>
+          <span class="v" id="sum-total">Rp —</span>
+        </div>
+
+        <button class="btn-order" id="btn-order" onclick="placeOrder()" disabled>
+          🚀 ORDER SEKARANG
+        </button>
+        <div class="sum-footnote">
+          🔒 Transaksi aman & terenkripsi<br>
+          Tanpa login akun Roblox kamu
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRUST -->
+  <div class="trust">
+    <div class="trust-item"><span class="ti">🔐</span> Tanpa Password</div>
+    <div class="trust-item"><span class="ti">⚡</span> 5–30 Menit</div>
+    <div class="trust-item"><span class="ti">✅</span> 50K+ Transaksi</div>
+    <div class="trust-item"><span class="ti">🕐</span> 24/7 Online</div>
+    <div class="trust-item"><span class="ti">💯</span> Garansi Aman</div>
+  </div>
+
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modal" onclick="closeOutside(event)">
+  <div class="modal">
+    <span class="modal-icon-big">⏳</span>
+    <h2>Order Diterima!</h2>
+    <div class="status-chip">
+      <div class="live-dot"></div>
+      PENDING — Diproses
+    </div>
+
+    <div class="modal-progress">
+      <div class="modal-progress-fill"></div>
+    </div>
+
+    <p class="modal-desc">
+      Pesanan kamu sedang <strong>diverifikasi</strong>. Setelah pembayaran dikonfirmasi, kami akan membeli gamepass kamu dan Robux akan masuk dalam <strong>5–30 menit</strong>.
+    </p>
+
+    <div class="order-box">
+      <div class="order-box-label">Nomor Order</div>
+      <div class="order-id-val" id="modal-oid">RBX-000000</div>
+    </div>
+
+    <div class="modal-gp-box">
+      <div class="modal-gp-emoji">🎫</div>
+      <div class="modal-gp-info">
+        <div class="modal-gp-title" id="modal-gp-name">Gamepass</div>
+        <div class="modal-gp-id">ID: <span id="modal-gp-id">—</span></div>
+      </div>
+      <div class="modal-gp-status">✓ Verified</div>
+    </div>
+
+    <div class="modal-meta-grid">
+      <div class="meta-box">
+        <div class="ml">Robux</div>
+        <div class="mv gold" id="modal-rbx">—</div>
+      </div>
+      <div class="meta-box">
+        <div class="ml">Total Bayar</div>
+        <div class="mv green" id="modal-total">—</div>
+      </div>
+      <div class="meta-box">
+        <div class="ml">Username</div>
+        <div class="mv purple" id="modal-user">—</div>
+      </div>
+      <div class="meta-box">
+        <div class="ml">Pembayaran</div>
+        <div class="mv" id="modal-pay">—</div>
+      </div>
+    </div>
+
+    <button class="btn-wa" onclick="openWA()">💬 Konfirmasi via WhatsApp</button>
+    <button class="btn-close" onclick="closeModal()">Tutup</button>
+  </div>
+</div>
+
+<script>
+  let _rbx = 0, _price = 0, _pkg = '', _pay = '', _gpId = '', _gpVerified = false;
+
+  function selectPkg(el, rbx, price) {
+    document.querySelectorAll('.pkg').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    _rbx = rbx; _price = price;
+    _pkg = rbx.toLocaleString('id') + ' R$';
+    updateSummary();
+  }
+
+  function selectPay(el, method) {
+    document.querySelectorAll('.pay-btn').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    _pay = method;
+    updateSummary();
+  }
+
+  function parseGamepassUrl() {
+    const url = document.getElementById('gp-url').value.trim();
+    const match = url.match(/game-pass\/(\d+)/i);
+    if (match) {
+      document.getElementById('gp-id').value = match[1];
+      onIdInput();
+    }
+  }
+
+  function extractAndVerify() {
+    parseGamepassUrl();
+    const id = document.getElementById('gp-id').value.trim();
+    if (id) showGamepassPreview(id);
+  }
+
+  function onIdInput() {
+    const id = document.getElementById('gp-id').value.trim();
+    if (id.length >= 6 && /^\d+$/.test(id)) {
+      setTimeout(() => showGamepassPreview(id), 300);
+    } else {
+      hidePreview();
+    }
+    updateSummary();
+  }
+
+  function showGamepassPreview(id) {
+    _gpId = id;
+    _gpVerified = true;
+    document.getElementById('gp-prev-id-val').textContent = id;
+    document.getElementById('gp-preview').classList.add('show');
+    updateSummary();
+  }
+
+  function hidePreview() {
+    _gpId = '';
+    _gpVerified = false;
+    document.getElementById('gp-preview').classList.remove('show');
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const user = document.getElementById('username').value.trim();
+    const gpId = document.getElementById('gp-id').value.trim();
+
+    document.getElementById('sum-rbx').textContent = _rbx ? _rbx.toLocaleString('id') + ' R$' : '— R$';
+    document.getElementById('sum-pkg').textContent = _pkg || '—';
+    document.getElementById('sum-user').textContent = user || '—';
+    document.getElementById('sum-pay').textContent = _pay || '—';
+    document.getElementById('sum-total').textContent = _price ? 'Rp ' + _price.toLocaleString('id') : 'Rp —';
+
+    const gpIdDisplay = document.getElementById('sum-gpid');
+    if (gpId) {
+      gpIdDisplay.textContent = gpId;
+      gpIdDisplay.classList.remove('empty');
+    } else {
+      gpIdDisplay.textContent = 'Belum diisi';
+      gpIdDisplay.classList.add('empty');
+    }
+
+    const canOrder = _pkg && _pay && user && gpId.length >= 6;
+    document.getElementById('btn-order').disabled = !canOrder;
+  }
+
+  function placeOrder() {
+    const oid = 'RBX-' + Math.floor(100000 + Math.random() * 900000);
+    const user = document.getElementById('username').value.trim();
+    const gpId = document.getElementById('gp-id').value.trim();
+
+    document.getElementById('modal-oid').textContent = oid;
+    document.getElementById('modal-rbx').textContent = _rbx.toLocaleString('id') + ' R$';
+    document.getElementById('modal-total').textContent = 'Rp ' + _price.toLocaleString('id');
+    document.getElementById('modal-user').textContent = user;
+    document.getElementById('modal-pay').textContent = _pay;
+    document.getElementById('modal-gp-id').textContent = gpId;
+    document.getElementById('modal-gp-name').textContent = 'Gamepass #' + gpId;
+
+    document.getElementById('modal').classList.add('show');
+  }
+
+  function closeModal() { document.getElementById('modal').classList.remove('show'); }
+  function closeOutside(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+
+  function openWA() {
+    const oid = document.getElementById('modal-oid').textContent;
+    const user = document.getElementById('modal-user').textContent;
+    const rbx = document.getElementById('modal-rbx').textContent;
+    const gpId = document.getElementById('modal-gp-id').textContent;
+    const total = document.getElementById('modal-total').textContent;
+    const msg = encodeURIComponent(
+      `Halo, saya mau konfirmasi order:\n\n` +
+      `📋 Order ID: ${oid}\n` +
+      `👤 Username: ${user}\n` +
+      `🎫 Gamepass ID: ${gpId}\n` +
+      `💎 Robux: ${rbx}\n` +
+      `💰 Total: ${total}\n\n` +
+      `Mohon diproses ya 🙏`
+    );
+    window.open(`https://wa.me/6281234567890?text=${msg}`, '_blank');
+  }
+</script>
+</body>
+</html>
