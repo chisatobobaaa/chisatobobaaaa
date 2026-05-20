@@ -1333,29 +1333,22 @@
       day: '2-digit', month: 'long', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     }) + ' WIB';
-    const text = '🛒 *ORDER TOP UP ROBUX*
-
-' +
-      '📋 ID Pesanan: `' + oid + '`
-' +
-      '🕐 Waktu: ' + now + '
-' +
-      '👤 Username Roblox: ' + user + '
-' +
-      '🎮 Gamepass ID: ' + gpId + '
-' +
-      '💎 Paket: ' + _rbx.toLocaleString('id') + ' Robux
-' +
-      '💰 Total: Rp ' + _price.toLocaleString('id') + '
-' +
-      '💳 Pembayaran: ' + payMethod + '
-' +
-      '📌 Status: ⏳ Menunggu Pembayaran';
+    const nl = '\n';
+';
+    const text = '🛒 ORDER TOP UP ROBUX' + nl + nl +
+      '📋 ID Pesanan: ' + oid + nl +
+      '🕐 Waktu: ' + now + nl +
+      '👤 Username Roblox: ' + user + nl +
+      '🎮 Gamepass ID: ' + gpId + nl +
+      '💎 Paket: ' + _rbx.toLocaleString('id') + ' Robux' + nl +
+      '💰 Total: Rp ' + _price.toLocaleString('id') + nl +
+      '💳 Pembayaran: ' + payMethod + nl +
+      '📌 Status: Menunggu Pembayaran';
     try {
       await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'Markdown' })
+        body: JSON.stringify({ chat_id: CHAT_ID, text: text })
       });
     } catch(e) { console.warn('Telegram error:', e); }
   }
