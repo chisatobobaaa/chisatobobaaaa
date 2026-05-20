@@ -1325,6 +1325,41 @@
 
   let _currentOrder = {};
 
+  async function kirimTelegram(oid, user, gpId, payMethod) {
+    const BOT_TOKEN = '8991295561:AAEeb0gSUA-elsZ73nyiI1WeKTSK5JED4yc';
+    const CHAT_ID = '7809292064';
+    const now = new Date().toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: '2-digit', month: 'long', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }) + ' WIB';
+    const text = '🛒 *ORDER TOP UP ROBUX*
+
+' +
+      '📋 ID Pesanan: `' + oid + '`
+' +
+      '🕐 Waktu: ' + now + '
+' +
+      '👤 Username Roblox: ' + user + '
+' +
+      '🎮 Gamepass ID: ' + gpId + '
+' +
+      '💎 Paket: ' + _rbx.toLocaleString('id') + ' Robux
+' +
+      '💰 Total: Rp ' + _price.toLocaleString('id') + '
+' +
+      '💳 Pembayaran: ' + payMethod + '
+' +
+      '📌 Status: ⏳ Menunggu Pembayaran';
+    try {
+      await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: 'Markdown' })
+      });
+    } catch(e) { console.warn('Telegram error:', e); }
+  }
+
   function showOrderModal(oid, user, gpId, payMethod) {
     document.getElementById('modal-oid').textContent = oid;
     document.getElementById('modal-rbx').textContent = _rbx.toLocaleString('id') + ' R$';
@@ -1334,6 +1369,7 @@
     document.getElementById('modal-gp-id').textContent = gpId;
     document.getElementById('modal-gp-name').textContent = 'Gamepass #' + gpId;
     document.getElementById('modal').classList.add('show');
+    kirimTelegram(oid, user, gpId, payMethod);
   }
 
   function closeModal() { document.getElementById('modal').classList.remove('show'); }
