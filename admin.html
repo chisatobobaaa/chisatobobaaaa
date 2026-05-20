@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — RBX Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #7c6aff;
+    --accent2: #ff6a9b;
+    --green: #00e5a0;
+    --yellow: #ffd166;
+    --red: #ff4d6d;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+    flex-direction: column;
+    gap: 0;
+  }
+  #login-screen.hidden { display: none; }
+
+  .login-box {
+    width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+  }
+  .login-box h1 {
+    font-family: var(--mono);
+    font-size: 20px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .login-box p { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+  .login-box input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .login-box input:focus { border-color: var(--accent); }
+  .login-box button {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 13px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: opacity .2s;
+  }
+  .login-box button:hover { opacity: .85; }
+  .login-err { color: var(--red); font-size: 12px; margin-top: 8px; text-align: center; display: none; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo span {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--accent);
+    display: block;
+  }
+  .sidebar-logo small { color: var(--muted); font-size: 11px; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0;
+    transition: all .15s;
+    border-left: 3px solid transparent;
+    margin: 1px 0;
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); background: rgba(124,106,255,.08); border-left-color: var(--accent); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 16px 20px 0;
+    border-top: 1px solid var(--border);
+  }
+  .logout-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    padding: 32px;
+    min-height: 100vh;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .page-header h2 {
+    font-family: var(--mono);
+    font-size: 20px;
+    color: var(--text);
+  }
+  .page-header span { color: var(--muted); font-size: 13px; margin-top: 2px; display: block; }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.purple::before { background: var(--accent); }
+  .stat-card.pink::before { background: var(--accent2); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.yellow::before { background: var(--yellow); }
+
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+  .stat-value { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--text); }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .stat-icon { position: absolute; top: 16px; right: 16px; font-size: 22px; opacity: .3; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-header h3 { font-size: 14px; font-weight: 600; }
+  .table-filters { display: flex; gap: 8px; }
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: var(--surface2);
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  td {
+    padding: 14px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .order-id { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .username { font-weight: 500; }
+  .robux-badge {
+    background: rgba(124,106,255,.15);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    display: inline-block;
+  }
+  .price { font-family: var(--mono); font-size: 13px; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .status-badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+  .status-badge.pending { background: rgba(255,209,102,.12); color: var(--yellow); }
+  .status-badge.pending::before { background: var(--yellow); }
+  .status-badge.success { background: rgba(0,229,160,.12); color: var(--green); }
+  .status-badge.success::before { background: var(--green); }
+  .status-badge.failed { background: rgba(255,77,109,.12); color: var(--red); }
+  .status-badge.failed::before { background: var(--red); }
+  .status-badge.process { background: rgba(124,106,255,.12); color: var(--accent); }
+  .status-badge.process::before { background: var(--accent); animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.3 } }
+
+  .action-btns { display: flex; gap: 6px; }
+  .btn-confirm {
+    background: rgba(0,229,160,.15);
+    border: 1px solid rgba(0,229,160,.3);
+    color: var(--green);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-confirm:hover { background: rgba(0,229,160,.25); }
+  .btn-reject {
+    background: rgba(255,77,109,.15);
+    border: 1px solid rgba(255,77,109,.3);
+    color: var(--red);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-reject:hover { background: rgba(255,77,109,.25); }
+  .btn-process {
+    background: rgba(124,106,255,.15);
+    border: 1px solid rgba(124,106,255,.3);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  /* ── CHART ── */
+  .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .chart-card p { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: height .5s ease;
+    position: relative;
+  }
+  .bar.purple { background: linear-gradient(180deg, var(--accent), rgba(124,106,255,.3)); }
+  .bar.green { background: linear-gradient(180deg, var(--green), rgba(0,229,160,.3)); }
+  .bar-label { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+
+  .donut-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+  .donut-legend { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-item span:last-child { margin-left: auto; font-family: var(--mono); color: var(--muted); }
+
+  canvas { max-width: 120px; max-height: 120px; }
+
+  /* ── EMPTY ── */
+  .empty { text-align: center; padding: 48px; color: var(--muted); }
+  .empty .icon { font-size: 36px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all .3s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+
+  /* ── DETAIL MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    width: 420px;
+    transform: scale(.95);
+    transition: transform .2s;
+  }
+  .modal-overlay.show .modal-box { transform: scale(1); }
+  .modal-box h3 { font-family: var(--mono); font-size: 16px; margin-bottom: 20px; color: var(--accent); }
+  .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .detail-row:last-of-type { border-bottom: none; }
+  .detail-row .key { color: var(--muted); }
+  .detail-row .val { font-family: var(--mono); font-size: 12px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-actions button { flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: opacity .2s; }
+  .modal-actions button:hover { opacity: .8; }
+  .btn-modal-confirm { background: var(--green); color: #000; }
+  .btn-modal-reject { background: var(--red); color: #fff; }
+  .btn-modal-close { background: var(--surface2); color: var(--muted); border: 1px solid var(--border) !important; }
+
+  .search-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    width: 200px;
+    transition: border-color .2s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+
+  .time { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>// ADMIN PANEL</h1>
+    <p>RBX Store — Dashboard Admin</p>
+    <input type="text" id="login-user" placeholder="Username" autocomplete="off">
+    <input type="password" id="login-pass" placeholder="Password">
+    <button onclick="doLogin()">Masuk</button>
+    <div class="login-err" id="login-err">Username atau password salah.</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <span>RBX_ADMIN</span>
+    <small>Control Panel v1.0</small>
+  </div>
+  <div class="nav-item active" onclick="showPage('dashboard')">
+    <span class="icon">◈</span> Dashboard
+  </div>
+  <div class="nav-item" onclick="showPage('orders')">
+    <span class="icon">◫</span> Semua Order
+  </div>
+  <div class="nav-item" onclick="showPage('pending')">
+    <span class="icon">◷</span> Pending
+    <span id="pending-badge" style="margin-left:auto;background:var(--yellow);color:#000;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;"></span>
+  </div>
+  <div class="nav-item" onclick="showPage('stats')">
+    <span class="icon">◬</span> Statistik
+  </div>
+  <div class="sidebar-bottom">
+    <button class="logout-btn" onclick="doLogout()">⏻ Logout</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <h2>Dashboard</h2>
+        <span id="dash-time"></span>
+      </div>
+      <button class="filter-btn" onclick="addDummyOrder()" style="border-color:var(--accent);color:var(--accent)">+ Simulasi Order Masuk</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card purple">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Pendapatan</div>
+        <div class="stat-value" id="stat-revenue">Rp 0</div>
+        <div class="stat-sub" id="stat-rev-sub">0 transaksi sukses</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">📦</div>
+        <div class="stat-label">Total Order</div>
+        <div class="stat-value" id="stat-orders">0</div>
+        <div class="stat-sub" id="stat-ord-sub">Hari ini: 0</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-label">Menunggu Konfirmasi</div>
+        <div class="stat-value" id="stat-pending">0</div>
+        <div class="stat-sub">Perlu tindakan segera</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-icon">💎</div>
+        <div class="stat-label">Total Robux Terjual</div>
+        <div class="stat-value" id="stat-robux">0</div>
+        <div class="stat-sub">R$ dikirim ke buyer</div>
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Order Terbaru</h3>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Username</th>
+            <th>Robux</th>
+            <th>Total</th>
+            <th>Metode</th>
+            <th>Status</th>
+            <th>Waktu</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="recent-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ALL ORDERS -->
+  <div class="page" id="page-orders">
+    <div class="page-header">
+      <div><h2>Semua Order</h2><span>Riwayat lengkap transaksi</span></div>
+      <input class="search-input" placeholder="🔍  Cari order ID / username..." oninput="searchOrders(this.value)">
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Riwayat Order</h3>
+        <div class="table-filters">
+          <button class="filter-btn active" onclick="filterOrders('all', this)">Semua</button>
+          <button class="filter-btn" onclick="filterOrders('pending', this)">Pending</button>
+          <button class="filter-btn" onclick="filterOrders('success', this)">Sukses</button>
+          <button class="filter-btn" onclick="filterOrders('failed', this)">Gagal</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Username</th>
+            <th>Robux</th>
+            <th>Total</th>
+            <th>Metode</th>
+            <th>Status</th>
+            <th>Waktu</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="all-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PENDING -->
+  <div class="page" id="page-pending">
+    <div class="page-header">
+      <div><h2>Order Pending</h2><span>Menunggu konfirmasi pembayaran</span></div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Perlu Dikonfirmasi</h3>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Username</th>
+            <th>Robux</th>
+            <th>Total</th>
+            <th>Metode</th>
+            <th>Waktu</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="pending-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="page" id="page-stats">
+    <div class="page-header">
+      <div><h2>Statistik</h2><span>Performa toko kamu</span></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card purple">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Pendapatan Total</div>
+        <div class="stat-value" id="s-revenue">Rp 0</div>
+        <div class="stat-sub">Semua waktu</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-label">Order Sukses</div>
+        <div class="stat-value" id="s-success">0</div>
+        <div class="stat-sub" id="s-rate">0% success rate</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-label">Order Pending</div>
+        <div class="stat-value" id="s-pending">0</div>
+        <div class="stat-sub">Belum dikonfirmasi</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-icon">❌</div>
+        <div class="stat-label">Order Gagal</div>
+        <div class="stat-value" id="s-failed">0</div>
+        <div class="stat-sub">Dibatalkan/expired</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>Pendapatan per Paket Robux</h3>
+        <p>Distribusi penjualan berdasarkan paket</p>
+        <div class="bar-chart" id="bar-chart"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Metode Pembayaran</h3>
+        <p>Pilihan populer buyer</p>
+        <div class="donut-wrap">
+          <canvas id="donut-chart" width="120" height="120"></canvas>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal-box">
+    <h3>// Detail Order</h3>
+    <div id="modal-detail-content"></div>
+    <div class="modal-actions" id="modal-detail-actions"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── CONFIG ──
+  const ADMIN_USER = 'admin';
+  const ADMIN_PASS = 'rbxadmin123'; // ganti password ini!
+
+  // ── STATE ──
+  let orders = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+  let currentFilter = 'all';
+  let currentSearch = '';
+  let selectedOrder = null;
+
+  // ── LOGIN ──
+  function doLogin() {
+    const u = document.getElementById('login-user').value;
+    const p = document.getElementById('login-pass').value;
+    if (u === ADMIN_USER && p === ADMIN_PASS) {
+      document.getElementById('login-screen').classList.add('hidden');
+      init();
+    } else {
+      document.getElementById('login-err').style.display = 'block';
+    }
+  }
+  document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  function doLogout() {
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+  }
+
+  // ── INIT ──
+  function init() {
+    updateClock();
+    setInterval(updateClock, 1000);
+    renderAll();
+  }
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('dash-time').textContent =
+      now.toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' }) +
+      ' — ' + now.toLocaleTimeString('id-ID');
+  }
+
+  // ── NAVIGATION ──
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+    renderAll();
+  }
+
+  // ── RENDER ──
+  function renderAll() {
+    renderStats();
+    renderRecentOrders();
+    renderAllOrders();
+    renderPendingOrders();
+    renderCharts();
+    updatePendingBadge();
+  }
+
+  function renderStats() {
+    const success = orders.filter(o => o.status === 'success');
+    const pending = orders.filter(o => o.status === 'pending');
+    const today = orders.filter(o => isToday(o.time));
+    const revenue = success.reduce((s, o) => s + o.price, 0);
+    const robux = success.reduce((s, o) => s + o.robux, 0);
+
+    document.getElementById('stat-revenue').textContent = 'Rp ' + revenue.toLocaleString('id');
+    document.getElementById('stat-rev-sub').textContent = success.length + ' transaksi sukses';
+    document.getElementById('stat-orders').textContent = orders.length;
+    document.getElementById('stat-ord-sub').textContent = 'Hari ini: ' + today.length;
+    document.getElementById('stat-pending').textContent = pending.length;
+    document.getElementById('stat-robux').textContent = robux.toLocaleString('id');
+
+    // stats page
+    const failed = orders.filter(o => o.status === 'failed');
+    const rate = orders.length ? Math.round(success.length / orders.length * 100) : 0;
+    document.getElementById('s-revenue').textContent = 'Rp ' + revenue.toLocaleString('id');
+    document.getElementById('s-success').textContent = success.length;
+    document.getElementById('s-rate').textContent = rate + '% success rate';
+    document.getElementById('s-pending').textContent = pending.length;
+    document.getElementById('s-failed').textContent = failed.length;
+  }
+
+  function isToday(ts) {
+    const d = new Date(ts), n = new Date();
+    return d.getDate() === n.getDate() && d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  }
+
+  function renderRecentOrders() {
+    const tbody = document.getElementById('recent-tbody');
+    const recent = [...orders].sort((a, b) => b.time - a.time).slice(0, 8);
+    tbody.innerHTML = recent.length ? recent.map(o => rowHTML(o, true)).join('') : emptyRow(8);
+  }
+
+  function renderAllOrders() {
+    const tbody = document.getElementById('all-tbody');
+    let filtered = [...orders].sort((a, b) => b.time - a.time);
+    if (currentFilter !== 'all') filtered = filtered.filter(o => o.status === currentFilter);
+    if (currentSearch) filtered = filtered.filter(o =>
+      o.id.toLowerCase().includes(currentSearch) || o.username.toLowerCase().includes(currentSearch)
+    );
+    tbody.innerHTML = filtered.length ? filtered.map(o => rowHTML(o, true)).join('') : emptyRow(8);
+  }
+
+  function renderPendingOrders() {
+    const tbody = document.getElementById('pending-tbody');
+    const pending = orders.filter(o => o.status === 'pending').sort((a, b) => b.time - a.time);
+    tbody.innerHTML = pending.length ? pending.map(o => pendingRowHTML(o)).join('') : emptyRow(7);
+    updatePendingBadge();
+  }
+
+  function updatePendingBadge() {
+    const cnt = orders.filter(o => o.status === 'pending').length;
+    const badge = document.getElementById('pending-badge');
+    badge.textContent = cnt > 0 ? cnt : '';
+  }
+
+  function emptyRow(cols) {
+    return `<tr><td colspan="${cols}" class="empty"><div class="icon">📭</div><p>Belum ada order</p></td></tr>`;
+  }
+
+  function rowHTML(o, showDetail) {
+    return `<tr>
+      <td><span class="order-id">${o.id}</span></td>
+      <td><span class="username">${o.username}</span></td>
+      <td><span class="robux-badge">${o.robux.toLocaleString('id')} R$</span></td>
+      <td><span class="price">Rp ${o.price.toLocaleString('id')}</span></td>
+      <td>${o.method}</td>
+      <td><span class="status-badge ${o.status}">${statusLabel(o.status)}</span></td>
+      <td><span class="time">${timeAgo(o.time)}</span></td>
+      <td><div class="action-btns">
+        ${o.status === 'pending' ? `<button class="btn-confirm" onclick="confirmOrder('${o.id}')">✓ Konfirmasi</button><button class="btn-reject" onclick="rejectOrder('${o.id}')">✗ Tolak</button>` : ''}
+        ${o.status === 'success' ? `<span style="color:var(--green);font-size:11px;">✓ Selesai</span>` : ''}
+        ${o.status === 'failed' ? `<span style="color:var(--red);font-size:11px;">✗ Ditolak</span>` : ''}
+        <button class="btn-process" onclick="showDetail('${o.id}')">Detail</button>
+      </div></td>
+    </tr>`;
+  }
+
+  function pendingRowHTML(o) {
+    return `<tr>
+      <td><span class="order-id">${o.id}</span></td>
+      <td><span class="username">${o.username}</span></td>
+      <td><span class="robux-badge">${o.robux.toLocaleString('id')} R$</span></td>
+      <td><span class="price">Rp ${o.price.toLocaleString('id')}</span></td>
+      <td>${o.method}</td>
+      <td><span class="time">${timeAgo(o.time)}</span></td>
+      <td><div class="action-btns">
+        <button class="btn-confirm" onclick="confirmOrder('${o.id}')">✓ Konfirmasi</button>
+        <button class="btn-reject" onclick="rejectOrder('${o.id}')">✗ Tolak</button>
+        <button class="btn-process" onclick="showDetail('${o.id}')">Detail</button>
+      </div></td>
+    </tr>`;
+  }
+
+  function statusLabel(s) {
+    return { pending: 'Pending', success: 'Sukses', failed: 'Gagal', process: 'Diproses' }[s] || s;
+  }
+
+  function timeAgo(ts) {
+    const diff = Date.now() - ts;
+    if (diff < 60000) return 'Baru saja';
+    if (diff < 3600000) return Math.floor(diff / 60000) + ' mnt lalu';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + ' jam lalu';
+    return new Date(ts).toLocaleDateString('id-ID');
+  }
+
+  // ── ACTIONS ──
+  function confirmOrder(id) {
+    const o = orders.find(x => x.id === id);
+    if (o) { o.status = 'success'; saveOrders(); renderAll(); showToast('✅ Order ' + id + ' dikonfirmasi!', 'success'); closeModal(); }
+  }
+
+  function rejectOrder(id) {
+    const o = orders.find(x => x.id === id);
+    if (o) { o.status = 'failed'; saveOrders(); renderAll(); showToast('❌ Order ' + id + ' ditolak.', 'error'); closeModal(); }
+  }
+
+  function saveOrders() { localStorage.setItem('rbx_orders', JSON.stringify(orders)); }
+
+  // ── DETAIL MODAL ──
+  function showDetail(id) {
+    const o = orders.find(x => x.id === id);
+    if (!o) return;
+    selectedOrder = o;
+    document.getElementById('modal-detail-content').innerHTML = `
+      <div class="detail-row"><span class="key">Order ID</span><span class="val">${o.id}</span></div>
+      <div class="detail-row"><span class="key">Username</span><span class="val">${o.username}</span></div>
+      <div class="detail-row"><span class="key">Gamepass ID</span><span class="val">${o.gpId}</span></div>
+      <div class="detail-row"><span class="key">Robux</span><span class="val">${o.robux.toLocaleString('id')} R$</span></div>
+      <div class="detail-row"><span class="key">Total Bayar</span><span class="val">Rp ${o.price.toLocaleString('id')}</span></div>
+      <div class="detail-row"><span class="key">Metode</span><span class="val">${o.method}</span></div>
+      <div class="detail-row"><span class="key">Status</span><span class="val"><span class="status-badge ${o.status}">${statusLabel(o.status)}</span></span></div>
+      <div class="detail-row"><span class="key">Waktu Order</span><span class="val">${new Date(o.time).toLocaleString('id-ID')}</span></div>
+    `;
+    const actions = document.getElementById('modal-detail-actions');
+    if (o.status === 'pending') {
+      actions.innerHTML = `
+        <button class="btn-modal-confirm" onclick="confirmOrder('${o.id}')">✓ Konfirmasi</button>
+        <button class="btn-modal-reject" onclick="rejectOrder('${o.id}')">✗ Tolak</button>
+        <button class="btn-modal-close" onclick="closeModal()">Tutup</button>
+      `;
+    } else {
+      actions.innerHTML = `<button class="btn-modal-close" style="flex:1" onclick="closeModal()">Tutup</button>`;
+    }
+    document.getElementById('detail-modal').classList.add('show');
+  }
+
+  function closeModal() { document.getElementById('detail-modal').classList.remove('show'); }
+  document.getElementById('detail-modal').addEventListener('click', e => { if (e.target.id === 'detail-modal') closeModal(); });
+
+  // ── FILTER & SEARCH ──
+  function filterOrders(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.table-filters .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAllOrders();
+  }
+  function searchOrders(v) { currentSearch = v.toLowerCase(); renderAllOrders(); }
+
+  // ── CHARTS ──
+  function renderCharts() {
+    // Bar chart
+    const packages = [80, 400, 800, 1600, 4500];
+    const labels = ['80R', '400R', '800R', '1600R', '4500R'];
+    const counts = packages.map(r => orders.filter(o => o.robux === r && o.status === 'success').length);
+    const max = Math.max(...counts, 1);
+    const bar = document.getElementById('bar-chart');
+    bar.innerHTML = counts.map((c, i) => `
+      <div class="bar-wrap">
+        <div class="bar ${i % 2 === 0 ? 'purple' : 'green'}" style="height:${Math.max(c / max * 100, 4)}%"></div>
+        <span class="bar-label">${labels[i]}</span>
+      </div>
+    `).join('');
+
+    // Donut chart
+    const methods = {};
+    orders.filter(o => o.status === 'success').forEach(o => { methods[o.method] = (methods[o.method] || 0) + 1; });
+    const colors = ['#7c6aff', '#ff6a9b', '#00e5a0', '#ffd166', '#60a5fa'];
+    const entries = Object.entries(methods);
+    const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
+
+    const canvas = document.getElementById('donut-chart');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 120, 120);
+    let start = -Math.PI / 2;
+    entries.forEach(([, v], i) => {
+      const slice = (v / total) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(60, 60);
+      ctx.arc(60, 60, 50, start, start + slice);
+      ctx.closePath();
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fill();
+      start += slice;
+    });
+    // hole
+    ctx.beginPath();
+    ctx.arc(60, 60, 30, 0, Math.PI * 2);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#111118';
+    ctx.fill();
+
+    if (entries.length === 0) {
+      ctx.beginPath();
+      ctx.arc(60, 60, 50, 0, Math.PI * 2);
+      ctx.fillStyle = '#2a2a3a';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(60, 60, 30, 0, Math.PI * 2);
+      ctx.fillStyle = '#111118';
+      ctx.fill();
+    }
+
+    document.getElementById('donut-legend').innerHTML = entries.length
+      ? entries.map(([k, v], i) => `
+        <div class="legend-item">
+          <div class="legend-dot" style="background:${colors[i % colors.length]}"></div>
+          <span>${k}</span>
+          <span>${v}x</span>
+        </div>
+      `).join('')
+      : '<div style="color:var(--muted);font-size:12px;text-align:center">Belum ada data</div>';
+  }
+
+  // ── TOAST ──
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── SIMULASI ORDER (untuk testing) ──
+  const dummyUsers = ['NightSlayer99', 'RobloxPro_ID', 'XxDarkness', 'CoolKid2025', 'StarBuilder'];
+  const dummyPkgs = [
+    { robux: 80, price: 8000 },
+    { robux: 400, price: 35000 },
+    { robux: 800, price: 65000 },
+    { robux: 1600, price: 125000 },
+    { robux: 4500, price: 350000 },
+  ];
+  const dummyMethods = ['DANA', 'GoPay', 'OVO', 'QRIS', 'BCA Virtual Account'];
+
+  function addDummyOrder() {
+    const pkg = dummyPkgs[Math.floor(Math.random() * dummyPkgs.length)];
+    const order = {
+      id: 'RBX-' + Math.floor(100000 + Math.random() * 900000),
+      username: dummyUsers[Math.floor(Math.random() * dummyUsers.length)],
+      gpId: Math.floor(1000000000 + Math.random() * 9000000000).toString(),
+      robux: pkg.robux,
+      price: pkg.price,
+      method: dummyMethods[Math.floor(Math.random() * dummyMethods.length)],
+      status: 'pending',
+      time: Date.now(),
+    };
+    orders.unshift(order);
+    saveOrders();
+    renderAll();
+    showToast('🔔 Order baru masuk: ' + order.id, 'success');
+  }
+
+  // ── INTEGRASI: Tangkap order dari index.html ──
+  // Kalau index.html dan admin.html di domain yang sama,
+  // order tersimpan ke localStorage key 'rbx_orders' secara otomatis.
+  // Tambahkan kode ini di index.html setelah pembayaran sukses:
+  //
+  // function saveOrderToAdmin(orderData) {
+  //   const orders = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+  //   orders.unshift({ ...orderData, status: 'pending', time: Date.now() });
+  //   localStorage.setItem('rbx_orders', JSON.stringify(orders));
+  // }
+</script>
+</body>
+</html>
