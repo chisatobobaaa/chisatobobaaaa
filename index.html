@@ -482,7 +482,7 @@
     border-radius: 10px;
     background: linear-gradient(135deg, rgba(124,92,252,0.2), rgba(252,92,125,0.15));
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
   }
   .gp-prev-info { flex: 1; }
@@ -688,8 +688,8 @@
     background: var(--s1);
     border: 1px solid var(--border2);
     border-radius: 18px;
-    padding: 36px 28px;
-    max-width: 440px; width: 100%;
+    padding: 22px 20px;
+    max-width: 380px; width: 100%; max-height: 90vh; overflow-y: auto;
     text-align: center;
     animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     position: relative;
@@ -702,13 +702,13 @@
   }
   @keyframes modalPop { from{opacity:0;transform:scale(0.85) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
 
-  .modal-icon-big { font-size: 4rem; margin-bottom: 14px; display: block; animation: iconBounce 0.6s 0.3s ease both; }
+  .modal-icon-big { font-size: 2.2rem; margin-bottom: 8px; display: block; animation: iconBounce 0.6s 0.3s ease both; }
   @keyframes iconBounce { from{transform:scale(0)} to{transform:scale(1)} }
 
   .modal h2 {
     font-family: 'Outfit', sans-serif;
     font-weight: 900;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     letter-spacing: -0.5px;
     margin-bottom: 8px;
   }
@@ -791,7 +791,7 @@
     display: flex; align-items: center; gap: 12px;
     text-align: left;
   }
-  .modal-gp-emoji { font-size: 2rem; }
+  .modal-gp-emoji { font-size: 1.4rem; }
   .modal-gp-info { flex: 1; }
   .modal-gp-title { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.82rem; margin-bottom: 4px; }
   .modal-gp-id { font-size: 0.68rem; color: var(--muted); }
@@ -831,6 +831,80 @@
     transition: all 0.2s;
   }
   .btn-close:hover { border-color: var(--border2); color: var(--text); }
+
+
+  /* ── PAYMENT ACTION BOX ── */
+  .pay-action-box {
+    background: var(--s2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .pay-action-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .pay-number {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900; font-size: 1.3rem;
+    color: var(--text); letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .btn-copy {
+    background: var(--accent);
+    border: none; border-radius: 7px;
+    padding: 8px 18px;
+    color: #fff; font-size: 0.75rem; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    width: 100%;
+  }
+  .btn-copy:hover { opacity: 0.85; }
+  .btn-copy.copied { background: var(--green); }
+
+  /* ── QRIS MODAL ── */
+  .qris-overlay {
+    display: none; position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,0.9); backdrop-filter: blur(12px);
+    align-items: center; justify-content: center;
+  }
+  .qris-overlay.show { display: flex; }
+  .qris-box {
+    background: #fff; border-radius: 16px;
+    padding: 24px; text-align: center; max-width: 300px; width: 90%;
+  }
+  .qris-box h3 { color: #111; font-size: 1rem; margin-bottom: 4px; }
+  .qris-box p { color: #666; font-size: 0.75rem; margin-bottom: 16px; }
+  .qris-img { width: 200px; height: 200px; margin: 0 auto 16px; display: block; }
+  .qris-amount { color: #111; font-weight: 900; font-size: 1.2rem; margin-bottom: 16px; }
+  .btn-qris-close {
+    background: #7c5cfc; color: #fff; border: none;
+    border-radius: 8px; padding: 10px 20px;
+    font-weight: 700; font-size: 0.8rem; cursor: pointer; width: 100%;
+  }
+
+  /* ── UPLOAD BUKTI ── */
+  .upload-section { margin-bottom: 14px; }
+  .upload-label { font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .upload-area {
+    border: 2px dashed var(--border2);
+    border-radius: 10px; padding: 16px;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s; position: relative;
+  }
+  .upload-area:hover { border-color: var(--accent); }
+  .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .upload-area .upload-icon { font-size: 1.5rem; margin-bottom: 6px; }
+  .upload-area .upload-text { font-size: 0.72rem; color: var(--muted); }
+  .upload-preview { display: none; margin-top: 8px; }
+  .upload-preview img { width: 100%; max-height: 120px; object-fit: cover; border-radius: 8px; }
+  .btn-submit-bukti {
+    width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 9px; padding: 12px;
+    color: #fff; font-family: 'Outfit', sans-serif;
+    font-weight: 700; font-size: 0.82rem; cursor: pointer;
+    transition: all 0.2s; margin-bottom: 8px;
+  }
+  .btn-submit-bukti:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-submit-bukti:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
   /* ===== TRUST BAR ===== */
   .trust {
@@ -1166,7 +1240,37 @@
       </div>
     </div>
 
+    <!-- PAYMENT ACTION: diisi JS sesuai metode -->
+    <div id="pay-action-area"></div>
+
+    <!-- UPLOAD BUKTI -->
+    <div class="upload-section">
+      <span class="upload-label">📎 Upload Bukti Pembayaran</span>
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="bukti-file" accept="image/*" onchange="previewBukti(this)">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">Klik atau drag foto bukti transfer</div>
+      </div>
+      <div class="upload-preview" id="upload-preview">
+        <img id="preview-img" src="" alt="preview">
+      </div>
+    </div>
+
+    <button class="btn-submit-bukti" id="btn-submit-bukti" onclick="kirimBukti()" disabled>
+      📤 Kirim Bukti Pembayaran
+    </button>
     <button class="btn-close" onclick="closeModal()">Tutup</button>
+  </div>
+</div>
+
+<!-- QRIS POPUP -->
+<div class="qris-overlay" id="qris-overlay" onclick="closeQris(event)">
+  <div class="qris-box">
+    <h3>💳 Bayar via QRIS</h3>
+    <p>Scan QR code di bawah dengan GoPay / OVO / DANA / m-Banking</p>
+    <img class="qris-img" id="qris-img" src="" alt="QRIS">
+    <div class="qris-amount" id="qris-amount"></div>
+    <button class="btn-qris-close" onclick="document.getElementById('qris-overlay').classList.remove('show')">✕ Tutup</button>
   </div>
 </div>
 
@@ -1352,6 +1456,14 @@
     } catch(e) { console.warn('Telegram error:', e); }
   }
 
+  // Nomor pembayaran per metode — GANTI dengan nomor kamu sendiri
+  const PAYMENT_NUMBERS = {
+    'DANA':  '081996112019',
+    'GoPay': '081996112019',
+  };
+  // URL gambar QRIS kamu — upload ke imgur/cloudinary lalu paste URL-nya
+  const QRIS_URL = 'https://cdn.discordapp.com/attachments/1287679384907550815/1506578909804757103/1a646c72-a68a-4b5e-829a-69c840a28a75.png?ex=6a0ec672&is=6a0d74f2&hm=048e850cdebc5dbddf1f17af9622c9abfad025565f091a6df4d4888010b64856&';
+
   function showOrderModal(oid, user, gpId, payMethod) {
     document.getElementById('modal-oid').textContent = oid;
     document.getElementById('modal-rbx').textContent = _rbx.toLocaleString('id') + ' R$';
@@ -1360,8 +1472,97 @@
     document.getElementById('modal-pay').textContent = payMethod;
     document.getElementById('modal-gp-id').textContent = gpId;
     document.getElementById('modal-gp-name').textContent = 'Gamepass #' + gpId;
+
+    // Reset upload
+    document.getElementById('bukti-file').value = '';
+    document.getElementById('upload-preview').style.display = 'none';
+    document.getElementById('btn-submit-bukti').disabled = true;
+
+    // Tampilkan aksi sesuai metode bayar
+    const area = document.getElementById('pay-action-area');
+    const num = PAYMENT_NUMBERS[payMethod];
+    if (payMethod === 'QRIS') {
+      area.innerHTML = '<button class="btn-copy" onclick="bukaQRIS()" style="margin-bottom:14px">📱 Buka QR Code untuk Bayar</button>';
+    } else if (num) {
+      area.innerHTML = '<div class="pay-action-box">' +
+        '<div class="pay-action-label">Nomor ' + payMethod + '</div>' +
+        '<div class="pay-number">' + num + '</div>' +
+        '<button class="btn-copy" id="btn-copy-num" data-num="' + num + '" onclick="salinNomor(this.dataset.num, this)">📋 Salin Nomor</button>' +
+        '</div>';
+    } else {
+      area.innerHTML = '';
+    }
+
     document.getElementById('modal').classList.add('show');
     kirimTelegram(oid, user, gpId, payMethod);
+  }
+
+  function salinNomor(num, btn) {
+    navigator.clipboard.writeText(num).then(() => {
+      btn.textContent = '✓ Tersalin!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 Salin Nomor'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function bukaQRIS() {
+    document.getElementById('qris-img').src = QRIS_URL;
+    document.getElementById('qris-amount').textContent = 'Rp ' + _price.toLocaleString('id');
+    document.getElementById('qris-overlay').classList.add('show');
+  }
+
+  function closeQris(e) {
+    if (e.target === document.getElementById('qris-overlay'))
+      document.getElementById('qris-overlay').classList.remove('show');
+  }
+
+  function previewBukti(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('preview-img').src = e.target.result;
+        document.getElementById('upload-preview').style.display = 'block';
+        document.getElementById('btn-submit-bukti').disabled = false;
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  async function kirimBukti() {
+    const btn = document.getElementById('btn-submit-bukti');
+    const oid = document.getElementById('modal-oid').textContent;
+    const imgSrc = document.getElementById('preview-img').src;
+    btn.disabled = true;
+    btn.textContent = '⏳ Mengirim...';
+
+    // Simpan ke localStorage supaya admin bisa lihat
+    const orders = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+    const idx = orders.findIndex(o => o.id === oid);
+    if (idx !== -1) {
+      orders[idx].bukti = imgSrc;
+      orders[idx].buktiTime = Date.now();
+      localStorage.setItem('rbx_orders', JSON.stringify(orders));
+    }
+
+    // Notif Telegram dengan foto
+    const BOT_TOKEN = '8991295561:AAEeb0gSUA-elsZ73nyiI1WeKTSK5JED4yc';
+    const CHAT_ID = '7809292064';
+    try {
+      // Kirim teks notif bukti
+      await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: '📸 BUKTI PEMBAYARAN MASUK\n\nOrder: ' + oid + '\nUsername: ' + document.getElementById('modal-user').textContent + '\nTotal: ' + document.getElementById('modal-total').textContent + '\n\n✅ Segera cek dan konfirmasi order!'
+        })
+      });
+    } catch(e) { console.warn(e); }
+
+    btn.textContent = '✅ Bukti Terkirim!';
+    btn.style.background = 'var(--green)';
+    btn.style.color = '#000';
+    setTimeout(() => { btn.textContent = '📤 Kirim Bukti Pembayaran'; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; }, 3000);
   }
 
   function closeModal() { document.getElementById('modal').classList.remove('show'); }
