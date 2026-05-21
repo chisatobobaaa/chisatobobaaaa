@@ -34,7 +34,7 @@
     font-family: var(--body);
     min-height: 100vh;
     display: flex;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
   /* ── GRID BACKGROUND ── */
@@ -43,30 +43,30 @@
     background-image:
       linear-gradient(rgba(124,106,255,.04) 1px, transparent 1px),
       linear-gradient(90deg, rgba(124,106,255,.04) 1px, transparent 1px);
-    background-size: 40px 40px;
+    background-size: 32px 32px;
     pointer-events: none;
     z-index: 0;
   }
 
   .bg-glow {
     position: fixed;
-    width: 600px; height: 600px;
+    width: 500px; height: 500px;
     border-radius: 50%;
-    filter: blur(120px);
+    filter: blur(100px);
     pointer-events: none;
     z-index: 0;
   }
-  .glow-1 { background: rgba(124,106,255,.12); top: -200px; right: -100px; }
-  .glow-2 { background: rgba(255,106,155,.08); bottom: -200px; left: -100px; }
+  .glow-1 { background: rgba(124,106,255,.12); top: -150px; right: -100px; }
+  .glow-2 { background: rgba(255,106,155,.08); bottom: -150px; left: -100px; }
 
   /* ── SPLIT LAYOUT ── */
   .left-panel {
-    width: 45%;
+    width: 42%;
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 48px;
+    padding: 36px 40px;
     z-index: 1;
     border-right: 1px solid var(--border);
     overflow: hidden;
@@ -84,32 +84,33 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 48px;
+    padding: 28px 36px;
     z-index: 1;
     position: relative;
+    overflow-y: auto;
   }
 
   /* ── LEFT CONTENT ── */
   .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
   }
   .brand-icon {
-    width: 36px; height: 36px;
+    width: 32px; height: 32px;
     background: var(--accent);
-    border-radius: 8px;
+    border-radius: 7px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
   }
   .brand-name {
     font-family: var(--mono);
-    font-size: 16px;
+    font-size: 14px;
     color: var(--accent);
     letter-spacing: .04em;
   }
 
-  .left-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .left-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 28px 0; }
 
   .hero-tag {
     display: inline-flex;
@@ -118,102 +119,100 @@
     background: rgba(0,229,160,.08);
     border: 1px solid rgba(0,229,160,.2);
     border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 11px;
+    padding: 4px 10px;
+    font-size: 10px;
     color: var(--accent3);
     font-weight: 600;
     letter-spacing: .06em;
     text-transform: uppercase;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
     width: fit-content;
   }
-  .hero-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); animation: blink 2s infinite; }
+  .hero-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--accent3); animation: blink 2s infinite; }
   @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
 
   .hero-title {
     font-family: var(--display);
-    font-size: clamp(32px, 3.5vw, 48px);
+    font-size: clamp(26px, 2.8vw, 40px);
     font-weight: 800;
     line-height: 1.15;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     letter-spacing: -.02em;
   }
   .hero-title .accent { color: var(--accent); }
   .hero-title .pink { color: var(--accent2); }
 
   .hero-desc {
-    font-size: 15px;
+    font-size: 13px;
     color: var(--text2);
-    line-height: 1.7;
-    max-width: 340px;
-    margin-bottom: 36px;
+    line-height: 1.65;
+    max-width: 300px;
+    margin-bottom: 24px;
   }
 
-  .feature-list { display: flex; flex-direction: column; gap: 12px; }
+  .feature-list { display: flex; flex-direction: column; gap: 9px; }
   .feature-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 13px;
+    gap: 10px;
+    font-size: 12px;
     color: var(--text2);
   }
   .feature-dot {
-    width: 28px; height: 28px;
-    border-radius: 7px;
+    width: 26px; height: 26px;
+    border-radius: 6px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px;
+    font-size: 12px;
     flex-shrink: 0;
   }
   .feature-dot.purple { background: rgba(124,106,255,.15); }
   .feature-dot.green { background: rgba(0,229,160,.12); }
   .feature-dot.pink { background: rgba(255,106,155,.12); }
 
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    flex: 1;
+  }
+  .stat-label { font-size: 9px; color: var(--muted); font-family: var(--mono); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 3px; }
+  .stat-val { font-family: var(--mono); font-weight: 700; color: var(--accent3); font-size: 15px; }
+
   .left-footer {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--muted);
     font-family: var(--mono);
   }
 
-  /* ── FLOATING ROBUX CARD ── */
-  .float-card {
-    position: absolute;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 12px;
-    padding: 14px 18px;
-    animation: floatUp 6s ease-in-out infinite;
-  }
-  .float-card:nth-child(2) { animation-delay: -3s; }
-  @keyframes floatUp { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-
-  .fc-1 { bottom: 180px; right: -20px; }
-  .fc-2 { top: 140px; right: 40px; animation-delay: -2s; }
-  .fc-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; font-family: var(--mono); }
-  .fc-value { font-family: var(--mono); font-weight: 700; color: var(--accent3); font-size: 18px; }
-  .fc-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
-
   /* ── AUTH FORM ── */
   .auth-box {
     width: 100%;
-    max-width: 400px;
+    max-width: 380px;
   }
 
   .auth-tabs {
     display: flex;
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 4px;
-    margin-bottom: 28px;
-    gap: 4px;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 22px;
+    gap: 3px;
   }
   .tab-btn {
     flex: 1;
-    padding: 10px;
+    padding: 9px;
     border: none;
-    border-radius: 9px;
+    border-radius: 8px;
     font-family: var(--body);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all .2s;
@@ -232,40 +231,38 @@
 
   .form-title {
     font-family: var(--display);
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 800;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     letter-spacing: -.02em;
   }
   .form-sub {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     line-height: 1.5;
   }
 
-  .input-group { margin-bottom: 16px; }
+  .input-group { margin-bottom: 13px; }
   .input-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text2);
-    margin-bottom: 7px;
+    margin-bottom: 6px;
     letter-spacing: .02em;
   }
   .input-label a { color: var(--accent); text-decoration: none; font-weight: 500; }
   .input-label a:hover { text-decoration: underline; }
 
-  .input-wrap {
-    position: relative;
-  }
+  .input-wrap { position: relative; }
   .input-icon {
     position: absolute;
-    left: 13px; top: 50%;
+    left: 11px; top: 50%;
     transform: translateY(-50%);
-    font-size: 14px;
+    font-size: 13px;
     opacity: .5;
     pointer-events: none;
   }
@@ -273,11 +270,11 @@
     width: 100%;
     background: var(--surface2);
     border: 1.5px solid var(--border2);
-    border-radius: 10px;
-    padding: 12px 14px 12px 40px;
+    border-radius: 9px;
+    padding: 10px 12px 10px 36px;
     color: var(--text);
     font-family: var(--body);
-    font-size: 14px;
+    font-size: 13px;
     outline: none;
     transition: all .2s;
   }
@@ -291,51 +288,51 @@
 
   .input-toggle {
     position: absolute;
-    right: 12px; top: 50%;
+    right: 10px; top: 50%;
     transform: translateY(-50%);
     background: none; border: none;
     color: var(--muted); cursor: pointer;
-    font-size: 14px; padding: 4px;
+    font-size: 13px; padding: 4px;
     transition: color .2s;
   }
   .input-toggle:hover { color: var(--text); }
 
   .field-err {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--red);
-    margin-top: 5px;
+    margin-top: 4px;
     display: none;
     padding-left: 2px;
   }
   .field-err.show { display: block; }
 
   /* PASSWORD STRENGTH */
-  .pw-strength { margin-top: 8px; }
-  .pw-bars { display: flex; gap: 4px; margin-bottom: 4px; }
+  .pw-strength { margin-top: 7px; }
+  .pw-bars { display: flex; gap: 3px; margin-bottom: 3px; }
   .pw-bar { flex: 1; height: 3px; border-radius: 2px; background: var(--border2); transition: background .3s; }
   .pw-bar.fill-weak { background: var(--red); }
   .pw-bar.fill-fair { background: var(--yellow); }
   .pw-bar.fill-good { background: var(--accent); }
   .pw-bar.fill-strong { background: var(--accent3); }
-  .pw-label { font-size: 11px; color: var(--muted); }
+  .pw-label { font-size: 10px; color: var(--muted); }
 
   /* TERMS */
   .terms-check {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 9px;
+    margin-bottom: 16px;
     margin-top: 4px;
   }
   .terms-check input[type="checkbox"] {
-    width: 16px; height: 16px;
+    width: 15px; height: 15px;
     accent-color: var(--accent);
     flex-shrink: 0;
     margin-top: 1px;
     cursor: pointer;
   }
   .terms-check label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--muted);
     line-height: 1.5;
     cursor: pointer;
@@ -346,10 +343,10 @@
   .divider {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin: 20px 0;
+    gap: 10px;
+    margin: 16px 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 11px;
   }
   .divider::before, .divider::after {
     content: '';
@@ -363,11 +360,11 @@
     width: 100%;
     background: var(--accent);
     border: none;
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: 9px;
+    padding: 12px;
     color: #fff;
     font-family: var(--body);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     transition: all .2s;
@@ -380,20 +377,19 @@
     position: absolute; inset: 0;
     background: linear-gradient(135deg, rgba(255,255,255,.1), transparent);
   }
-  .btn-main:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124,106,255,.35); }
+  .btn-main:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,106,255,.35); }
   .btn-main:active { transform: translateY(0); }
   .btn-main:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
-  .btn-main.loading { pointer-events: none; }
 
   .btn-google {
     width: 100%;
     background: var(--surface2);
     border: 1.5px solid var(--border2);
-    border-radius: 10px;
-    padding: 12px;
+    border-radius: 9px;
+    padding: 10px;
     color: var(--text2);
     font-family: var(--body);
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all .2s;
@@ -403,45 +399,45 @@
 
   /* LOADING SPINNER */
   @keyframes spin { to{transform:rotate(360deg)} }
-  .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: middle; }
+  .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; vertical-align: middle; }
 
   /* SUCCESS STATE */
   .success-screen {
     display: none;
     text-align: center;
-    padding: 20px 0;
+    padding: 12px 0;
     animation: fadeUp .4s ease;
   }
   .success-screen.show { display: block; }
   .success-icon {
-    width: 72px; height: 72px;
+    width: 60px; height: 60px;
     background: rgba(0,229,160,.1);
     border: 2px solid rgba(0,229,160,.3);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 32px;
-    margin: 0 auto 16px;
+    font-size: 26px;
+    margin: 0 auto 14px;
     animation: popIn .4s cubic-bezier(.175,.885,.32,1.275);
   }
   @keyframes popIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
-  .success-screen h3 { font-family: var(--display); font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--accent3); }
-  .success-screen p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; }
-  .success-user { font-family: var(--mono); font-size: 13px; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 20px; text-align: left; }
-  .success-user .key { color: var(--muted); font-size: 11px; margin-bottom: 2px; }
+  .success-screen h3 { font-family: var(--display); font-size: 20px; font-weight: 800; margin-bottom: 6px; color: var(--accent3); }
+  .success-screen p { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 18px; }
+  .success-user { font-family: var(--mono); font-size: 12px; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; text-align: left; }
+  .success-user .key { color: var(--muted); font-size: 10px; margin-bottom: 2px; }
   .success-user .val { font-weight: 700; color: var(--text); }
 
   /* TOAST */
   .toast {
-    position: fixed; bottom: 24px; right: 24px;
+    position: fixed; bottom: 20px; right: 20px;
     background: var(--surface2);
     border: 1px solid var(--border2);
     border-radius: 10px;
-    padding: 14px 18px;
-    font-size: 13px;
-    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    display: flex; align-items: center; gap: 8px;
     opacity: 0; transform: translateY(12px);
     transition: all .3s; z-index: 9999;
-    max-width: 320px;
+    max-width: 280px;
     box-shadow: 0 8px 32px rgba(0,0,0,.4);
   }
   .toast.show { opacity: 1; transform: translateY(0); }
@@ -451,22 +447,97 @@
   .logged-in-bar {
     background: rgba(0,229,160,.06);
     border: 1px solid rgba(0,229,160,.15);
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 12px;
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-size: 11px;
     color: var(--accent3);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     display: none;
     align-items: center;
     gap: 8px;
   }
   .logged-in-bar.show { display: flex; }
+
+  /* ── MOBILE HEADER (only on mobile) ── */
+  .mobile-header {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+    width: 100%;
+  }
+  .mobile-header .brand-icon { width: 28px; height: 28px; font-size: 14px; }
+  .mobile-header .brand-name { font-size: 13px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    body {
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .mobile-header { display: flex; }
+
+    .left-panel {
+      display: none; /* hide on mobile */
+    }
+
+    .right-panel {
+      flex: none;
+      width: 100%;
+      padding: 20px 20px 40px;
+      align-items: flex-start;
+      min-height: 0;
+    }
+
+    .auth-box {
+      max-width: 100%;
+    }
+
+    .toast {
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      max-width: none;
+    }
+
+    .form-title { font-size: 18px; }
+
+    .btn-main { padding: 13px; font-size: 14px; }
+  }
+
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .left-panel {
+      width: 38%;
+      padding: 28px 30px;
+    }
+    .right-panel {
+      padding: 24px 28px;
+    }
+  }
+
+  @media (min-width: 1025px) {
+    body { overflow: hidden; }
+    .right-panel { overflow-y: auto; max-height: 100vh; }
+  }
 </style>
 </head>
 <body>
 <div class="bg-grid"></div>
 <div class="bg-glow glow-1"></div>
 <div class="bg-glow glow-2"></div>
+
+<!-- MOBILE HEADER -->
+<div class="mobile-header">
+  <div class="brand-icon">💎</div>
+  <span class="brand-name">RBX_STORE</span>
+</div>
 
 <!-- LEFT PANEL -->
 <div class="left-panel">
@@ -483,12 +554,12 @@
       <span class="pink">Terpercaya</span>
     </h1>
     <p class="hero-desc">
-      Beli Robux dengan harga terjangkau, proses cepat, dan aman. Daftar sekarang dan mulai top up!
+      Beli Robux dengan harga terjangkau, proses cepat, dan aman. Daftar sekarang!
     </p>
     <div class="feature-list">
       <div class="feature-item">
         <div class="feature-dot purple">⚡</div>
-        Pengiriman Robux dalam hitungan menit
+        Pengiriman dalam hitungan menit
       </div>
       <div class="feature-item">
         <div class="feature-dot green">🔒</div>
@@ -500,16 +571,15 @@
       </div>
     </div>
 
-    <!-- Floating cards -->
-    <div class="float-card fc-1">
-      <div class="fc-label">LAST ORDER</div>
-      <div class="fc-value">+800 R$</div>
-      <div class="fc-sub">CoolKid2025 · 2 mnt lalu</div>
-    </div>
-    <div class="float-card fc-2">
-      <div class="fc-label">TOTAL TERJUAL</div>
-      <div class="fc-value">42.5K R$</div>
-      <div class="fc-sub">Minggu ini</div>
+    <div class="stats-row">
+      <div class="stat-pill">
+        <div class="stat-label">LAST ORDER</div>
+        <div class="stat-val">+800 R$</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-label">MINGGU INI</div>
+        <div class="stat-val">42.5K R$</div>
+      </div>
     </div>
   </div>
 
@@ -526,7 +596,7 @@
     <div class="logged-in-bar" id="logged-in-bar">
       <span>✓</span>
       <span id="logged-in-text">Kamu sudah login</span>
-      <button onclick="doLogout()" style="margin-left:auto;background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-weight:600;">Logout</button>
+      <button onclick="doLogout()" style="margin-left:auto;background:none;border:none;color:var(--red);font-size:11px;cursor:pointer;font-weight:600;">Logout</button>
     </div>
 
     <!-- Tabs -->
@@ -540,7 +610,7 @@
       <h2 class="form-title">Selamat datang 👋</h2>
       <p class="form-sub">Masuk ke akun kamu untuk mulai top up Robux</p>
 
-<div class="input-group">
+      <div class="input-group">
         <div class="input-label">Email atau Username</div>
         <div class="input-wrap">
           <span class="input-icon">@</span>
@@ -570,7 +640,7 @@
         👤 Coba sebagai Tamu
       </button>
 
-      <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:20px">
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:16px">
         Belum punya akun? <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="switchTab('register'); return false;">Daftar sekarang</a>
       </p>
     </div>
@@ -580,7 +650,7 @@
       <h2 class="form-title">Buat akun baru ✨</h2>
       <p class="form-sub">Daftar gratis dan nikmati top up Robux yang mudah</p>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="input-group" style="margin-bottom:0">
           <div class="input-label">Nama Depan</div>
           <div class="input-wrap">
@@ -598,7 +668,7 @@
         </div>
       </div>
 
-      <div class="input-group" style="margin-top:16px">
+      <div class="input-group" style="margin-top:13px">
         <div class="input-label">Username</div>
         <div class="input-wrap">
           <span class="input-icon">#</span>
@@ -662,7 +732,7 @@
 
       <button class="btn-main" id="btn-register" onclick="doRegister()">Buat Akun Sekarang</button>
 
-      <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:16px">
+      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px">
         Sudah punya akun? <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600" onclick="switchTab('login'); return false;">Masuk di sini</a>
       </p>
     </div>
@@ -674,7 +744,7 @@
       <p id="success-desc">Kamu berhasil masuk ke akun RBX Store kamu.</p>
       <div class="success-user" id="success-user-info"></div>
       <button class="btn-main" onclick="goToDashboard()">Lanjut ke Dashboard →</button>
-      <button onclick="doLogout()" style="display:block;width:100%;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-top:12px;padding:8px;">Logout dari akun ini</button>
+      <button onclick="doLogout()" style="display:block;width:100%;background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-top:10px;padding:8px;">Logout dari akun ini</button>
     </div>
 
   </div>
@@ -694,7 +764,6 @@
   // ── INIT ──
   window.addEventListener('load', () => {
     checkSession();
-
   });
 
   function checkSession() {
@@ -706,7 +775,7 @@
     }
   }
 
-// ── TAB SWITCH ──
+  // ── TAB SWITCH ──
   function switchTab(tab) {
     document.getElementById('form-login').classList.remove('active');
     document.getElementById('form-register').classList.remove('active');
@@ -716,6 +785,8 @@
     document.getElementById('form-' + tab).classList.add('active');
     document.getElementById('tab-' + tab).classList.add('active');
     clearErrors();
+    // Scroll to top on mobile
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ── LOGIN ──
@@ -821,7 +892,7 @@
     }, 1000);
   }
 
-  // ── GOOGLE DEMO ──
+  // ── TAMU ──
   function loginTamu() {
     const uname = 'tamu_' + Math.floor(1000 + Math.random() * 9000);
     const tamuUser = {
@@ -861,13 +932,13 @@
     `;
 
     document.getElementById('success-screen').classList.add('show');
+    // Scroll to top on mobile
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function goToDashboard() {
     showToast('🚀 Diarahkan ke halaman utama...', 't-success');
-    setTimeout(() => {
-      window.location.href = 'index.html';
-    }, 800);
+    setTimeout(() => { window.location.href = 'index.html'; }, 800);
   }
 
   // ── LOGOUT ──
@@ -881,7 +952,7 @@
     showToast('👋 Berhasil logout', 't-success');
   }
 
-  // ── FORGOT PASSWORD (demo) ──
+  // ── FORGOT PASSWORD ──
   function showForgot() {
     const email = document.getElementById('login-identity').value.trim();
     if (!email) {
@@ -889,7 +960,7 @@
       document.getElementById('login-identity').focus();
       return;
     }
-    showToast('📧 Link reset password dikirim ke ' + email + ' (demo)', 't-success');
+    showToast('📧 Link reset dikirim ke ' + email + ' (demo)', 't-success');
   }
 
   // ── PASSWORD STRENGTH ──
@@ -897,19 +968,15 @@
     const wrap = document.getElementById('pw-strength');
     const label = document.getElementById('pw-label');
     const bars = [1,2,3,4].map(i => document.getElementById('pw-b' + i));
-
     if (!pw) { wrap.style.display = 'none'; return; }
     wrap.style.display = 'block';
-
     let score = 0;
     if (pw.length >= 8) score++;
     if (/[A-Z]/.test(pw)) score++;
     if (/[0-9]/.test(pw)) score++;
     if (/[^a-zA-Z0-9]/.test(pw)) score++;
-
     const levels = ['fill-weak', 'fill-fair', 'fill-good', 'fill-strong'];
     const labels = ['Terlalu lemah', 'Lumayan', 'Bagus', 'Sangat kuat 💪'];
-
     bars.forEach((b, i) => {
       b.className = 'pw-bar';
       if (i < score) b.classList.add(levels[score - 1]);
@@ -918,7 +985,7 @@
     label.style.color = ['var(--red)', 'var(--yellow)', 'var(--accent)', 'var(--accent3)'][score - 1] || 'var(--muted)';
   }
 
-  // ── CHECK USERNAME AVAILABILITY ──
+  // ── CHECK USERNAME ──
   let usernameTimer;
   function checkUsername(val) {
     clearTimeout(usernameTimer);
@@ -926,9 +993,7 @@
     const input = document.getElementById('reg-username');
     err.classList.remove('show');
     input.classList.remove('error', 'success');
-
     if (!val || val.length < 3) return;
-
     usernameTimer = setTimeout(() => {
       const users = getUsers();
       const taken = users.find(u => u.username.toLowerCase() === val.toLowerCase());
@@ -951,7 +1016,7 @@
     else { input.type = 'password'; btn.textContent = '👁'; }
   }
 
-  // ── SIMPLE HASH (NOT FOR PRODUCTION — use bcrypt server-side!) ──
+  // ── HASH ──
   function hashPass(pw) {
     let hash = 0;
     for (let i = 0; i < pw.length; i++) {
