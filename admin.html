@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel — kokorbx</title>
+<title>Admin Panel — RBX Store</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1211,8 +1211,11 @@
   }
 
   function proofCell(o) {
-    if (o.proofImage) {
-      const viewedBadge = o.proofViewed ? `<br><span style="font-size:9px;color:var(--green);font-weight:600;">&#10003; Sudah dilihat</span>` : `<br><span style="font-size:9px;color:var(--yellow);font-weight:600;">&#9733; Baru!</span>`;
+    const hasImg = !!(o.proofImage || o.proof_url);
+    if (hasImg) {
+      const viewedBadge = o.proofViewed
+        ? `<br><span style="font-size:9px;color:var(--green);font-weight:600;">&#10003; Sudah dilihat</span>`
+        : `<br><span style="font-size:9px;color:var(--yellow);font-weight:600;">&#9733; Baru!</span>`;
       return `<button class="btn-proof" onclick="openLightbox('${o.id}')">&#128444; Lihat Bukti</button>${viewedBadge}`;
     }
     if (o.hasProof) {
@@ -1575,10 +1578,16 @@
   async function openDetail(id) {
     const o = orders.find(x => x.id === id);
     if (!o) return;
-    // Ambil proof dari IndexedDB cache, fallback localStorage lama
+
+    // Prioritas: proof_url dari Supabase > IndexedDB cache > localStorage lama
     if (!o.proofImage) {
-      o.proofImage = getProofFromCache(id) || await idbGet('rbx_proof_' + id);
+      if (o.proof_url) {
+        o.proofImage = o.proof_url; // URL langsung dari Supabase Storage
+      } else {
+        o.proofImage = getProofFromCache(id) || await idbGet('rbx_proof_' + id);
+      }
     }
+
     if (o.proofImage && !o.proofViewed) {
       o.proofViewed = true;
       saveOrders();
@@ -1591,6 +1600,7 @@
           <div class="proof-img-wrap">
             <img src="${o.proofImage}" alt="Bukti Transfer" onclick="openLightbox('${id}')">
           </div>
+          ${o.proof_url ? `<div style="margin-top:6px;"><a href="${o.proof_url}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">🔗 Buka gambar penuh</a></div>` : ''}
           ${o.proofViewed ? '<div class="proof-viewed-badge">&#10003; Sudah dilihat admin</div>' : ''}
         </div>`
       : `<div class="proof-section">
@@ -1643,11 +1653,16 @@
   async function openLightbox(id) {
     const o = orders.find(x => x.id === id);
     if (!o) return;
+    // Prioritas: proof_url Supabase > IndexedDB cache
     if (!o.proofImage) {
-      o.proofImage = getProofFromCache(id) || await idbGet('rbx_proof_' + id);
+      if (o.proof_url) {
+        o.proofImage = o.proof_url;
+      } else {
+        o.proofImage = getProofFromCache(id) || await idbGet('rbx_proof_' + id);
+      }
     }
     if (!o.proofImage) {
-      alert('⚠️ Gambar bukti tidak ditemukan.\nMungkin customer belum upload, atau tersimpan di browser lain.');
+      alert('⚠️ Gambar bukti tidak ditemukan.\nMungkin customer belum upload bukti.');
       return;
     }
     if (!o.proofViewed) { o.proofViewed = true; saveOrders(); renderAll(); }
