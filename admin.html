@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel — RBX Store</title>
+<title>Admin Panel — kokorbx</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -645,6 +645,120 @@
   const ADMIN_USER = 'koko';
   const ADMIN_PASS = 'kokorbx_';
 
+  // ── SUPABASE CONFIG ───────────────────────────────────────────
+  const SUPA_URL  = 'https://ddsvmskrbebblktsawxi.supabase.co';
+  const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkc3Ztc2tyYmViYmxrdHNhd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTY0MDMsImV4cCI6MjA5NTAzMjQwM30.dqCrn61TQoWc-AmAT7VI33j_fh810m89eHKBnpAmH2w';
+  const SUPA_HEADERS = {
+    'Content-Type': 'application/json',
+    'apikey': SUPA_KEY,
+    'Authorization': 'Bearer ' + SUPA_KEY,
+    'Prefer': 'return=representation'
+  };
+
+  // ── SUPABASE HELPERS ──────────────────────────────────────────
+  async function sbFetch(path, opts = {}) {
+    const res = await fetch(SUPA_URL + path, {
+      ...opts,
+      headers: { ...SUPA_HEADERS, ...(opts.headers || {}) }
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('Supabase error ' + res.status + ': ' + err);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : [];
+  }
+
+  // Ambil semua order dari Supabase (dipakai admin)
+  async function sbLoadAllOrders() {
+    try {
+      const rows = await sbFetch('/rest/v1/orders?order=created_at.desc&limit=500');
+      return rows.map(sbRowToOrder);
+    } catch(e) {
+      console.warn('[Supabase] load gagal, fallback localStorage:', e);
+      return null; // null = pakai localStorage
+    }
+  }
+
+  // Update status order di Supabase
+  async function sbUpdateOrder(orderId, patch) {
+    try {
+      await sbFetch('/rest/v1/orders?id=eq.' + encodeURIComponent(orderId), {
+        method: 'PATCH',
+        body: JSON.stringify(patch)
+      });
+      return true;
+    } catch(e) {
+      console.warn('[Supabase] update gagal:', e);
+      return false;
+    }
+  }
+
+  // Hapus order di Supabase
+  async function sbDeleteOrder(orderId) {
+    try {
+      await sbFetch('/rest/v1/orders?id=eq.' + encodeURIComponent(orderId), {
+        method: 'DELETE',
+        headers: { 'Prefer': 'return=minimal' }
+      });
+      return true;
+    } catch(e) {
+      console.warn('[Supabase] delete gagal:', e);
+      return false;
+    }
+  }
+
+  // Konversi row Supabase → format order admin
+  function sbRowToOrder(row) {
+    const statusMap = {
+      bukti_masuk: 'pending', completed: 'success', complete: 'success',
+      done: 'success', rejected: 'failed', cancelled: 'failed', canceled: 'failed'
+    };
+    const status = statusMap[row.status] || row.status || 'pending';
+    return {
+      id:          row.id           || row.order_id || '',
+      username:    row.username     || row.roblox_username || row.user || '-',
+      gpId:        row.gp_id        || row.gamepass_id || '',
+      robux:       Number(row.robux || 0),
+      price:       Number(row.price || row.total || row.amount || 0),
+      method:      row.method       || row.payment_method || row.metode || '-',
+      status:      status,
+      time:        row.created_at   ? new Date(row.created_at).getTime() : (row.time || Date.now()),
+      hasProof:    !!(row.proof_url || row.has_proof || row.bukti_url),
+      proofImage:  row.proof_url    || row.bukti_url || null,
+      proofViewed: !!(row.proof_viewed),
+      sentAt:      row.sent_at      ? new Date(row.sent_at).getTime() : null,
+      emailSent:   !!(row.email_sent),
+      emailSentAt: row.email_sent_at ? new Date(row.email_sent_at).getTime() : null,
+      email:       row.email        || '',
+      _fromSupabase: true
+    };
+  }
+
+  // Supabase Realtime via long-poll (tanpa WebSocket SDK)
+  let _realtimePollTimer = null;
+  let _lastOrderCount    = 0;
+  let _lastOrderIds      = new Set();
+
+  function startSupabasePolling() {
+    if (_realtimePollTimer) return;
+    _realtimePollTimer = setInterval(async () => {
+      try {
+        const fresh = await sbLoadAllOrders();
+        if (!fresh) return;
+        const newOnes = fresh.filter(o => !_lastOrderIds.has(o.id));
+        if (newOnes.length > 0 || fresh.length !== _lastOrderCount) {
+          _lastOrderCount = fresh.length;
+          _lastOrderIds   = new Set(fresh.map(o => o.id));
+          orders = fresh;
+          if (newOnes.length > 0) newOnes.forEach(o => showNewOrderNotif(o));
+          renderAll();
+        }
+      } catch(e) {}
+    }, 4000); // poll tiap 4 detik
+  }
+  // ── END SUPABASE ──────────────────────────────────────────────
+
   // ── IndexedDB helpers (baca proof yang disimpan index.html) ────
   const _IDB_NAME = 'rbx_store';
   const _IDB_STORE = 'proofs';
@@ -704,49 +818,135 @@
   // ── End IndexedDB helpers ─────────────────────────────────────
 
   // ── MERGE semua order dari rbx_orders_u_* ke rbx_orders ─────────
-  function mergeAllCustomerOrders() {
-    const masterRaw = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
-    const masterMap = {};
-    masterRaw.forEach(o => { masterMap[o.id] = o; });
+  const ORDER_MASTER_KEY = 'rbx_orders';
+  const ORDER_USER_PREFIX = 'rbx_orders_u_';
 
-    let changed = false;
+  function readOrderArray(key) {
+    try {
+      const data = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(data) ? data : [];
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function toNumber(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'string') {
+      const n = Number(value.replace(/[^\d]/g, ''));
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
+  }
+
+  function isOrderLike(value) {
+    if (!value || typeof value !== 'object') return false;
+    const id = String(value.id || value.orderId || value.order_id || '');
+    if (id.startsWith('RBX-')) return true;
+    return !!id && ('robux' in value || 'price' in value || 'total' in value || 'amount' in value);
+  }
+
+  function normalizeOrder(raw) {
+    const o = Object.assign({}, raw || {});
+    if (!o.id) o.id = o.orderId || o.order_id || '';
+    if (!o.username) o.username = o.robloxUsername || o.user || o.playerName || '-';
+    if (!o.method) o.method = o.paymentMethod || o.metode || '-';
+    if (!o.price) o.price = o.total || o.amount || 0;
+    o.robux = toNumber(o.robux);
+    o.price = toNumber(o.price);
+
+    if (!o.time) {
+      const rawTime = o.createdAt || o.timestamp || o.date;
+      const parsed = typeof rawTime === 'number' ? rawTime : Date.parse(rawTime || '');
+      o.time = Number.isFinite(parsed) && parsed > 0 ? parsed : Date.now();
+    }
+
+    const statusMap = {
+      bukti_masuk: 'pending',
+      completed: 'success',
+      complete: 'success',
+      done: 'success',
+      rejected: 'failed',
+      cancelled: 'failed',
+      canceled: 'failed'
+    };
+    o.status = statusMap[o.status] || o.status || 'pending';
+    if ((raw || {}).status === 'bukti_masuk' || o.proofImage || o.bukti) o.hasProof = true;
+    return o;
+  }
+
+  function toStorableOrder(order) {
+    const c = Object.assign({}, normalizeOrder(order));
+    if (c.proofImage && String(c.proofImage).startsWith('data:')) {
+      delete c.proofImage;
+      c.hasProof = true;
+    }
+    if (c.bukti && String(c.bukti).startsWith('data:')) {
+      delete c.bukti;
+      c.hasProof = true;
+    }
+    return c;
+  }
+
+  function mergeOrder(existing, incoming) {
+    if (!existing) return normalizeOrder(incoming);
+    const oldStatus = existing.status || 'pending';
+    const newStatus = incoming.status || 'pending';
+    const merged = Object.assign({}, existing, incoming);
+
+    if ((oldStatus === 'success' || oldStatus === 'failed') && newStatus === 'pending') {
+      merged.status = oldStatus;
+    }
+
+    merged.hasProof = !!(existing.hasProof || incoming.hasProof || existing.proofImage || incoming.proofImage || existing.bukti || incoming.bukti);
+    merged.proofViewed = !!(existing.proofViewed || incoming.proofViewed);
+    if (existing.sentAt && !incoming.sentAt) merged.sentAt = existing.sentAt;
+    if (existing.emailSent && !incoming.emailSent) merged.emailSent = existing.emailSent;
+    if (existing.emailSentAt && !incoming.emailSentAt) merged.emailSentAt = existing.emailSentAt;
+    if (existing.emailSentFailed && !incoming.emailSentFailed) merged.emailSentFailed = existing.emailSentFailed;
+    return normalizeOrder(merged);
+  }
+
+  function getOrderStorageKeys() {
+    const keys = new Set([ORDER_MASTER_KEY]);
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (!key || !key.startsWith('rbx_orders_u_')) continue;
-      try {
-        const userOrders = JSON.parse(localStorage.getItem(key) || '[]');
-        userOrders.forEach(o => {
-          if (!masterMap[o.id]) {
-            // Order baru dari customer yang belum ada di master
-            const clean = Object.assign({}, o);
-            if (clean.proofImage && clean.proofImage.startsWith('data:')) { delete clean.proofImage; clean.hasProof = true; }
-            if (clean.bukti && clean.bukti.startsWith('data:')) { delete clean.bukti; clean.hasProof = true; }
-            if (!clean.status) clean.status = 'pending';
-            if (clean.status === 'bukti_masuk') { clean.status = 'pending'; clean.hasProof = true; }
-            masterMap[clean.id] = clean;
-            changed = true;
-          } else {
-            // Update proof/status jika ada update dari customer
-            const existing = masterMap[o.id];
-            if (!existing.hasProof && (o.hasProof || o.proofImage || o.bukti)) {
-              existing.hasProof = true;
-              changed = true;
-            }
-          }
-        });
-      } catch(e) {}
+      if (!key) continue;
+      if (key === ORDER_MASTER_KEY || key.startsWith(ORDER_USER_PREFIX)) keys.add(key);
+    }
+    return Array.from(keys);
+  }
+
+  function mergeAllCustomerOrders() {
+    const before = localStorage.getItem(ORDER_MASTER_KEY) || '[]';
+    const byId = {};
+
+    getOrderStorageKeys().forEach(key => {
+      readOrderArray(key).forEach(raw => {
+        if (!isOrderLike(raw)) return;
+        const order = normalizeOrder(raw);
+        if (!order.id) return;
+        byId[order.id] = mergeOrder(byId[order.id], order);
+      });
+    });
+
+    const merged = Object.values(byId)
+      .sort((a, b) => (b.time || 0) - (a.time || 0))
+      .map(toStorableOrder);
+
+    try {
+      localStorage.setItem(ORDER_MASTER_KEY, JSON.stringify(merged));
+    } catch(e) {
+      console.warn('[Kokorbx] merge order gagal:', e);
     }
 
-    if (changed) {
-      const merged = Object.values(masterMap);
-      try { localStorage.setItem('rbx_orders', JSON.stringify(merged)); } catch(e) {}
-    }
-    return changed;
+    return before !== JSON.stringify(merged);
   }
 
   function loadOrders() {
-    mergeAllCustomerOrders(); // selalu merge dulu sebelum load
-    return JSON.parse(localStorage.getItem('rbx_orders') || '[]').map(o => {
+    mergeAllCustomerOrders();
+    return readOrderArray(ORDER_MASTER_KEY).map(o => {
+      o = normalizeOrder(o);
       if (!o.proofImage && !o.bukti) {
         const proof = getProofFromCache(o.id);
         if (proof) o.proofImage = proof;
@@ -756,17 +956,12 @@
         const proof = getProofFromCache(o.id);
         if (proof) o.proofImage = proof;
       }
-      // Normalkan status: bukti_masuk → pending (tapi tandai hasProof=true)
       if (!o.status) o.status = 'pending';
-      if (o.status === 'bukti_masuk') {
-        o.status = 'pending';
-        o.hasProof = true;
-      }
+      if (o.status === 'bukti_masuk') { o.status = 'pending'; o.hasProof = true; }
       return o;
     });
   }
-  // Load orders langsung dari localStorage dulu (sync) supaya tidak kosong
-  // IndexedDB (proof images) akan di-preload saat init() dipanggil setelah login
+  // Sementara load dari localStorage, Supabase akan override di init()
   let orders = loadOrders();
   let currentFilter = 'all';
   let currentSearch = '';
@@ -914,7 +1109,7 @@
     // 2. Storage event — menangkap perubahan dari tab/window lain
     window.addEventListener('storage', async (evt) => {
       if (!evt.key) return;
-      if (evt.key !== 'rbx_orders' && !evt.key.startsWith('rbx_orders_u_')) return;
+      if (evt.key !== ORDER_MASTER_KEY && !evt.key.startsWith(ORDER_USER_PREFIX)) return;
       await preloadAllProofs();
       const fresh = loadOrders();
       const oldIds = new Set(orders.map(o => o.id));
@@ -946,19 +1141,23 @@
     setInterval(updateClock, 1000);
     cleanupLocalStorageImages();
     await preloadAllProofs();
-    orders = loadOrders();
+
+    // Coba load dari Supabase dulu
+    showToast('⏳ Memuat order dari server...', 'success');
+    const supaOrders = await sbLoadAllOrders();
+    if (supaOrders !== null && supaOrders.length >= 0) {
+      orders = supaOrders;
+      _lastOrderCount = orders.length;
+      _lastOrderIds   = new Set(orders.map(o => o.id));
+      showToast('✅ ' + orders.length + ' order dimuat dari Supabase.', 'success');
+    } else {
+      orders = loadOrders(); // fallback localStorage
+      showToast('⚠️ Supabase gagal, pakai data lokal.', 'error');
+    }
+
     renderAll();
     setupRealtimeListener();
-    // Polling fallback setiap 3 detik
-    setInterval(async () => {
-      await preloadAllProofs();
-      const fresh = loadOrders();
-      const oldIds = new Set(orders.map(o => o.id));
-      const newOrders = fresh.filter(o => !oldIds.has(o.id));
-      if (newOrders.length > 0) newOrders.forEach(o => showNewOrderNotif(o));
-      orders = fresh;
-      renderAll();
-    }, 3000);
+    startSupabasePolling(); // polling Supabase tiap 4 detik
   }
 
   function updateClock() {
@@ -1187,22 +1386,26 @@
     console.log('[RBX] confirmAndSendRobux dipanggil, id:', id);
     const o = orders.find(x => x.id === id);
     if (!o) {
-      console.warn('[RBX] Order tidak ditemukan di array orders! id:', id, 'orders:', orders);
+      console.warn('[RBX] Order tidak ditemukan! id:', id);
       alert('⚠️ Order tidak ditemukan. Coba refresh halaman (tombol 🔄) lalu coba lagi.');
       return;
     }
 
     try {
-      // Update status dulu
-      o.status = 'success';
-      o.sentAt = Date.now();
-      saveOrders();
+      o.status  = 'success';
+      o.sentAt  = Date.now();
 
-      // Update juga di rbx_orders_u_* supaya customer bisa lihat
+      // Update ke Supabase
+      const supaOk = await sbUpdateOrder(id, {
+        status:  'success',
+        sent_at: new Date(o.sentAt).toISOString()
+      });
+
+      saveOrders(); // tetap simpan lokal juga
       const robuxStr = (typeof o.robux === 'number' ? o.robux : Number(o.robux) || 0).toLocaleString('id');
       renderAll();
       closeModal();
-      showToast('✅ Robux ' + robuxStr + ' R$ berhasil dikirim ke ' + o.username + '!', 'success');
+      showToast((supaOk ? '✅' : '✅⚠️') + ' Robux ' + robuxStr + ' R$ berhasil dikirim ke ' + o.username + (supaOk ? '' : ' (Supabase gagal update)') + '!', 'success');
 
       // Kirim Email via EmailJS
       const cfg = getEmailJSConfig();
@@ -1217,8 +1420,9 @@
       const result = await kirimEmailJS(toEmail, o);
       if (result.ok) {
         showToast('✅ ' + result.msg, 'success');
-        o.emailSent = true;
+        o.emailSent   = true;
         o.emailSentAt = Date.now();
+        await sbUpdateOrder(id, { email_sent: true, email_sent_at: new Date(o.emailSentAt).toISOString() });
       } else {
         showToast('⚠️ ' + result.msg, 'error');
         o.emailSentFailed = result.msg;
@@ -1230,27 +1434,35 @@
     }
   }
 
-  function rejectOrder(id) {
+  async function rejectOrder(id) {
     if (!confirm('Yakin ingin menolak order ' + id + '?')) return;
     const o = orders.find(x => x.id === id);
-    if (o) { o.status = 'failed'; saveOrders(); renderAll(); closeModal(); showToast('Order ' + id + ' ditolak.', 'error'); }
+    if (o) {
+      o.status = 'failed';
+      await sbUpdateOrder(id, { status: 'failed' });
+      saveOrders();
+      renderAll();
+      closeModal();
+      showToast('Order ' + id + ' ditolak.', 'error');
+    }
   }
 
-  function deleteOrder(id) {
+  async function deleteOrder(id) {
     if (!confirm('Yakin ingin MENGHAPUS permanen order ' + id + '?\nOrder yang dihapus tidak bisa dikembalikan.')) return;
-    // Hapus dari rbx_orders (global)
     orders = orders.filter(x => x.id !== id);
+
+    // Hapus dari Supabase
+    await sbDeleteOrder(id);
+
     saveOrders();
-    // Hapus juga dari semua rbx_orders_u_* (per user) supaya hilang di sisi customer
+    // Hapus juga dari semua rbx_orders_u_* lokal
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('rbx_orders_u_')) {
+      if (key && key.startsWith(ORDER_USER_PREFIX)) {
         try {
-          const uOrders = JSON.parse(localStorage.getItem(key) || '[]');
+          const uOrders = readOrderArray(key);
           const filtered = uOrders.filter(x => x.id !== id);
-          if (filtered.length !== uOrders.length) {
-            localStorage.setItem(key, JSON.stringify(filtered));
-          }
+          if (filtered.length !== uOrders.length) localStorage.setItem(key, JSON.stringify(filtered));
         } catch(e) {}
       }
     }
@@ -1262,25 +1474,62 @@
   async function refreshData(btnId) {
     const btn = document.getElementById(btnId);
     if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 420); }
-    await preloadAllProofs();
+
+    const supaOrders = await sbLoadAllOrders();
     const oldLen = orders.length;
-    orders = loadOrders(); // mergeAllCustomerOrders() sudah dipanggil di dalam loadOrders()
+    if (supaOrders !== null) {
+      orders = supaOrders;
+      _lastOrderCount = orders.length;
+      _lastOrderIds   = new Set(orders.map(o => o.id));
+    } else {
+      await preloadAllProofs();
+      orders = loadOrders();
+    }
+
     renderAll();
     const diff = orders.length - oldLen;
-    if (diff > 0) showToast('\u{1F4E5} ' + diff + ' order baru ditemukan!', 'success');
-    else showToast('\u{2705} Data sudah terbaru.', 'success');
+    if (diff > 0) showToast('📥 ' + diff + ' order baru ditemukan!', 'success');
+    else showToast('✅ Data sudah terbaru (' + orders.length + ' order).', 'success');
+  }
+
+  function syncOrdersToCustomerKeys(cleanOrders) {
+    const byId = {};
+    cleanOrders.forEach(o => { if (o.id) byId[o.id] = o; });
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(ORDER_USER_PREFIX)) continue;
+
+      const userOrders = readOrderArray(key);
+      let changed = false;
+      const updated = userOrders.map(raw => {
+        if (!isOrderLike(raw)) return raw;
+        const current = normalizeOrder(raw);
+        const master = byId[current.id];
+        if (!master) return raw;
+        changed = true;
+        return toStorableOrder(Object.assign({}, current, {
+          status: master.status,
+          sentAt: master.sentAt,
+          emailSent: master.emailSent,
+          emailSentAt: master.emailSentAt,
+          emailSentFailed: master.emailSentFailed,
+          proofViewed: !!(master.proofViewed || current.proofViewed),
+          hasProof: !!(master.hasProof || current.hasProof)
+        }));
+      });
+
+      if (changed) {
+        try { localStorage.setItem(key, JSON.stringify(updated)); } catch(e) {}
+      }
+    }
   }
 
   function saveOrders() {
-    // Strip gambar base64 sebelum simpan ke localStorage supaya tidak QuotaExceededError
-    const clean = orders.map(o => {
-      const c = Object.assign({}, o);
-      if (c.proofImage && c.proofImage.startsWith('data:')) { delete c.proofImage; c.hasProof = true; }
-      if (c.bukti && c.bukti.startsWith('data:')) { delete c.bukti; c.hasProof = true; }
-      return c;
-    });
+    const clean = orders.map(toStorableOrder);
     try {
-      localStorage.setItem('rbx_orders', JSON.stringify(clean));
+      localStorage.setItem(ORDER_MASTER_KEY, JSON.stringify(clean));
+      syncOrdersToCustomerKeys(clean);
     } catch(e) {
       console.warn('[Kokorbx] saveOrders gagal:', e);
     }
@@ -1289,7 +1538,7 @@
   // Bersihkan gambar base64 lama yang masih nyangkut di rbx_orders / rbx_orders_u_*
   function cleanupLocalStorageImages() {
     try {
-      const all = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+      const all = readOrderArray(ORDER_MASTER_KEY);
       let dirty = false;
       all.forEach(o => {
         if ((o.proofImage && o.proofImage.startsWith('data:')) ||
@@ -1300,14 +1549,14 @@
           dirty = true;
         }
       });
-      if (dirty) localStorage.setItem('rbx_orders', JSON.stringify(all));
+      if (dirty) localStorage.setItem(ORDER_MASTER_KEY, JSON.stringify(all));
     } catch(e) {}
     // Bersihkan juga rbx_orders_u_*
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (!k || !k.startsWith('rbx_orders_u_')) continue;
+      if (!k || !k.startsWith(ORDER_USER_PREFIX)) continue;
       try {
-        const arr = JSON.parse(localStorage.getItem(k) || '[]');
+        const arr = readOrderArray(k);
         let dirty = false;
         arr.forEach(o => {
           if ((o.proofImage && o.proofImage.startsWith('data:')) ||
@@ -1330,7 +1579,11 @@
     if (!o.proofImage) {
       o.proofImage = getProofFromCache(id) || await idbGet('rbx_proof_' + id);
     }
-    if (o.proofImage && !o.proofViewed) { o.proofViewed = true; saveOrders(); }
+    if (o.proofImage && !o.proofViewed) {
+      o.proofViewed = true;
+      saveOrders();
+      sbUpdateOrder(id, { proof_viewed: true }).catch(() => {});
+    }
 
     const proofHTML = o.proofImage
       ? `<div class="proof-section">
