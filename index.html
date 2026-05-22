@@ -944,6 +944,48 @@
       return await res.json();
     } catch(e) { return null; }
   }
+
+  // Upload bukti ke Supabase Storage → kembalikan public URL
+  async function sbUploadBukti(orderId, base64Data) {
+    try {
+      // Konversi base64 → Blob
+      const [meta, b64] = base64Data.split(',');
+      const mime = (meta.match(/:(.*?);/) || ['','image/jpeg'])[1];
+      const ext  = mime.includes('png') ? 'png' : 'jpg';
+      const binary = atob(b64);
+      const arr = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+      const blob = new Blob([arr], { type: mime });
+
+      const filePath = 'bukti/' + orderId + '_' + Date.now() + '.' + ext;
+
+      const res = await fetch(
+        SUPA_URL + '/storage/v1/object/proofs/' + filePath,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': SUPA_KEY,
+            'Authorization': 'Bearer ' + SUPA_KEY,
+            'Content-Type': mime,
+            'x-upsert': 'true'
+          },
+          body: blob
+        }
+      );
+
+      if (!res.ok) {
+        console.warn('[Supabase Storage] upload gagal:', await res.text());
+        return null;
+      }
+
+      // Public URL
+      const publicUrl = SUPA_URL + '/storage/v1/object/public/proofs/' + filePath;
+      return publicUrl;
+    } catch(e) {
+      console.warn('[Supabase Storage] upload error:', e);
+      return null;
+    }
+  }
   // ── END SUPABASE ─────────────────────────────────────────────
 
   function selectPkg(el, rbx, price) {
@@ -1760,7 +1802,6 @@
         alert('⚠️ Pilih foto bukti pembayaran terlebih dahulu!');
         return;
       }
-      // Pakai bukti lama
       _buktiFile = existing;
     }
 
@@ -1768,23 +1809,40 @@
     btn.disabled = true;
     btn.textContent = '⏳ Memproses...';
 
-    // Kompres gambar supaya muat di localStorage (maks 800x800, kualitas 70%)
+    // Kompres gambar (maks 800x800, kualitas 70%)
     let buktiData = _buktiFile;
     try {
       buktiData = await compressImageBase64(_buktiFile, 800, 800, 0.70);
     } catch(e) { buktiData = _buktiFile; }
 
-    btn.textContent = '⏳ Mengirim...';
+    btn.textContent = '⏳ Mengupload...';
 
-    // Simpan bukti ke IndexedDB, lalu update status order
+    // 1. Upload ke Supabase Storage
+    const proofUrl = await sbUploadBukti(_buktiOrderId, buktiData);
+
+    if (proofUrl) {
+      // 2. Update kolom proof_url & has_proof di Supabase
+      await sbUpdateOrderStatus(_buktiOrderId, {
+        proof_url: proofUrl,
+        has_proof: true,
+        status: 'pending'
+      });
+      btn.textContent = '⏳ Mengirim...';
+    } else {
+      // Fallback: lanjut pakai IndexedDB saja kalau Supabase Storage gagal
+      console.warn('[Bukti] Supabase Storage gagal, lanjut IndexedDB only');
+    }
+
+    // 3. Simpan ke IndexedDB lokal juga (untuk tampil di sisi customer)
     await updateOrderById(_buktiOrderId, {
       bukti: buktiData,
       proofImage: buktiData,
       buktiTime: Date.now(),
-      status: 'bukti_masuk'
+      status: 'bukti_masuk',
+      ...(proofUrl ? { proof_url: proofUrl, hasProof: true } : {})
     });
 
-    // Kirim foto bukti ke Telegram
+    // 4. Kirim foto bukti ke Telegram
     const orders = getMyOrders();
     const o = orders.find(x => x.id === _buktiOrderId) || {};
     const caption2 = '📸 BUKTI PEMBAYARAN MASUK\n\nOrder: ' + _buktiOrderId +
@@ -1792,10 +1850,10 @@
       '\nRobux: ' + (o.robux ? o.robux.toLocaleString('id') + ' R$' : '—') +
       '\nTotal: Rp ' + (o.price ? o.price.toLocaleString('id') : '—') +
       '\nMetode: ' + (o.method || '—') +
+      (proofUrl ? '\n🔗 Bukti: ' + proofUrl : '') +
       '\n\n✅ Segera cek dan konfirmasi order!';
     sendBuktiTelegram(buktiData, caption2);
 
-    // Langsung tampilkan sukses tanpa nunggu Telegram
     btn.textContent = '✅ Bukti Terkirim!';
     btn.style.background = 'var(--green)';
     btn.style.color = '#000';
@@ -1874,6 +1932,12 @@
           showStatusToast('❌ Order ' + sRow.id + ' — ditolak oleh admin.', 'error');
         }
       }
+      // Sync proof_url dari Supabase ke lokal
+      if (local && sRow.proof_url && !local.proof_url) {
+        local.proof_url = sRow.proof_url;
+        local.hasProof = true;
+        changed = true;
+      }
       // Kalau ada order di Supabase yang belum ada di localStorage (misal login device lain)
       if (!local) {
         const normalized = {
@@ -1883,6 +1947,7 @@
           status: newStatus,
           time: sRow.created_at ? new Date(sRow.created_at).getTime() : Date.now(),
           hasProof: !!(sRow.proof_url || sRow.has_proof),
+          proof_url: sRow.proof_url || null,
         };
         uOrders.unshift(normalized);
         changed = true;
