@@ -895,6 +895,57 @@
   const CHAT_ID     = '7809292064';
   // ============================================================
 
+  // ── SUPABASE CONFIG ──────────────────────────────────────────
+  const SUPA_URL = 'https://ddsvmskrbebblktsawxi.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkc3Ztc2tyYmViYmxrdHNhd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTY0MDMsImV4cCI6MjA5NTAzMjQwM30.dqCrn61TQoWc-AmAT7VI33j_fh810m89eHKBnpAmH2w';
+  const SUPA_H   = { 'Content-Type':'application/json', 'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY, 'Prefer':'return=representation' };
+
+  async function sbInsertOrder(order) {
+    try {
+      const payload = {
+        id:         order.id,
+        username:   order.username,
+        gp_id:      order.gpId || '',
+        robux:      Number(order.robux) || 0,
+        price:      Number(order.price) || 0,
+        method:     order.method || '',
+        status:     'pending',
+        email:      order.email || '',
+        has_proof:  false,
+        proof_viewed: false,
+        created_at: new Date().toISOString()
+      };
+      const res = await fetch(SUPA_URL + '/rest/v1/orders', {
+        method: 'POST',
+        headers: SUPA_H,
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) console.warn('[Supabase] insert order gagal:', await res.text());
+    } catch(e) { console.warn('[Supabase] insert order error:', e); }
+  }
+
+  async function sbUpdateOrderStatus(oid, patch) {
+    try {
+      await fetch(SUPA_URL + '/rest/v1/orders?id=eq.' + encodeURIComponent(oid), {
+        method: 'PATCH',
+        headers: { ...SUPA_H, 'Prefer':'return=minimal' },
+        body: JSON.stringify(patch)
+      });
+    } catch(e) { console.warn('[Supabase] update error:', e); }
+  }
+
+  async function sbGetMyOrders(username) {
+    try {
+      const res = await fetch(
+        SUPA_URL + '/rest/v1/orders?username=eq.' + encodeURIComponent(username) + '&order=created_at.desc',
+        { headers: SUPA_H }
+      );
+      if (!res.ok) return null;
+      return await res.json();
+    } catch(e) { return null; }
+  }
+  // ── END SUPABASE ─────────────────────────────────────────────
+
   function selectPkg(el, rbx, price) {
     document.querySelectorAll('.pkg').forEach(p => p.classList.remove('selected'));
     el.classList.add('selected');
@@ -1268,6 +1319,9 @@
       if (!all.find(o => o.id === clean.id)) all.unshift(clean);
       localStorage.setItem('rbx_orders', JSON.stringify(all));
     } catch(e) { console.warn('saveOrderForUser rbx_orders gagal:', e); }
+
+    // ── Simpan ke Supabase (terpusat, bisa dilihat admin) ──
+    sbInsertOrder(order);
   }
 
   // Kompres gambar base64 supaya tidak overload localStorage (maks ~400KB)
@@ -1352,7 +1406,7 @@
       }
     }
 
-    // Sinkronkan status dari rbx_orders (yang diupdate admin)
+    // Sinkronkan status dari rbx_orders lokal (backup)
     const all = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
     return uOrders.map(o => {
       const adminVer = all.find(a => a.id === o.id);
@@ -1789,42 +1843,75 @@
   }
   // updateUserBar & renderMyOrders dipanggil setelah preloadAllProofs() selesai (lihat di atas)
 
-  // ── POLLING STATUS ORDER (sinkron dari admin setiap 5 detik) ──
-  function pollOrderStatus() {
+  // ── POLLING STATUS ORDER dari Supabase (tiap 5 detik) ──
+  async function pollOrderStatus() {
     const s = getSession();
     if (!s) return;
     const uname = getCurrentUsername();
+
+    // Ambil status terbaru dari Supabase
+    const supaOrders = await sbGetMyOrders(uname);
+    if (!supaOrders) {
+      // Fallback ke localStorage lama
+      _pollLocalFallback(uname);
+      return;
+    }
+
     const uKey = userOrderKey(uname);
-    const uOrders = JSON.parse(localStorage.getItem(uKey) || '[]');
-    const all = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+    let uOrders = JSON.parse(localStorage.getItem(uKey) || '[]');
     let changed = false;
 
-    // Hapus dari user jika sudah dihapus admin di rbx_orders
-    const filtered = uOrders.filter(o => {
-      const stillExists = all.find(a => a.id === o.id);
-      if (!stillExists) { changed = true; return false; }
-      return true;
-    });
-
-    // Sinkronisasi status dari admin
-    filtered.forEach(o => {
-      const adminVer = all.find(a => a.id === o.id);
-      if (adminVer && adminVer.status !== o.status) {
-        o.status = adminVer.status;
-        if (adminVer.sentAt) o.sentAt = adminVer.sentAt;
+    supaOrders.forEach(sRow => {
+      const local = uOrders.find(o => o.id === sRow.id);
+      const newStatus = sRow.status === 'completed' ? 'success' : sRow.status;
+      if (local && local.status !== newStatus) {
+        local.status = newStatus;
+        if (sRow.sent_at) local.sentAt = new Date(sRow.sent_at).getTime();
         changed = true;
-        if (adminVer.status === 'success') {
-          showStatusToast('✅ Order ' + o.id + ' — Robux berhasil dikirim!', 'success');
-        } else if (adminVer.status === 'failed') {
-          showStatusToast('❌ Order ' + o.id + ' — ditolak oleh admin.', 'error');
+        if (newStatus === 'success') {
+          showStatusToast('✅ Order ' + sRow.id + ' — Robux berhasil dikirim!', 'success');
+        } else if (newStatus === 'failed') {
+          showStatusToast('❌ Order ' + sRow.id + ' — ditolak oleh admin.', 'error');
         }
+      }
+      // Kalau ada order di Supabase yang belum ada di localStorage (misal login device lain)
+      if (!local) {
+        const normalized = {
+          id: sRow.id, username: sRow.username, gpId: sRow.gp_id || '',
+          robux: Number(sRow.robux||0), price: Number(sRow.price||0),
+          method: sRow.method||'-', email: sRow.email||'',
+          status: newStatus,
+          time: sRow.created_at ? new Date(sRow.created_at).getTime() : Date.now(),
+          hasProof: !!(sRow.proof_url || sRow.has_proof),
+        };
+        uOrders.unshift(normalized);
+        changed = true;
       }
     });
 
     if (changed) {
-      localStorage.setItem(uKey, JSON.stringify(filtered));
+      localStorage.setItem(uKey, JSON.stringify(uOrders));
       renderMyOrders();
     }
+  }
+
+  function _pollLocalFallback(uname) {
+    const uKey = userOrderKey(uname);
+    const uOrders = JSON.parse(localStorage.getItem(uKey) || '[]');
+    const all = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+    let changed = false;
+    const filtered = uOrders.filter(o => { const e = all.find(a => a.id === o.id); if (!e) { changed = true; return false; } return true; });
+    filtered.forEach(o => {
+      const av = all.find(a => a.id === o.id);
+      if (av && av.status !== o.status) {
+        o.status = av.status;
+        if (av.sentAt) o.sentAt = av.sentAt;
+        changed = true;
+        if (av.status === 'success') showStatusToast('✅ Order ' + o.id + ' — Robux berhasil dikirim!', 'success');
+        else if (av.status === 'failed') showStatusToast('❌ Order ' + o.id + ' — ditolak oleh admin.', 'error');
+      }
+    });
+    if (changed) { localStorage.setItem(uKey, JSON.stringify(filtered)); renderMyOrders(); }
   }
 
   function showStatusToast(msg, type) {
