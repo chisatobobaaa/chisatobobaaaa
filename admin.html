@@ -123,6 +123,11 @@
   .status-badge.reviewed { background: rgba(0,229,160,.12); color: #60efca; }
   .status-badge.reviewed::before { background: #60efca; }
   @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+  @keyframes notifPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4);background:var(--accent)} }
+  @keyframes slideInRight { from{transform:translateX(20px);opacity:0} to{transform:translateX(0);opacity:1} }
+  .new-order-flash { animation: slideInRight .35s ease; }
+  .live-dot { display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;animation:pulse 1.5s infinite; }
+  .live-badge { display:inline-flex;align-items:center;gap:4px;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);border-radius:20px;padding:3px 9px;font-size:10px;font-weight:600;color:var(--green); }
   .action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
   .btn-confirm { background: rgba(0,229,160,.15); border: 1px solid rgba(0,229,160,.3); color: var(--green); border-radius: 5px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
   .btn-confirm:hover { background: rgba(0,229,160,.25); }
@@ -514,7 +519,7 @@
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
     <div class="page-header">
-      <div><h2>Dashboard</h2><span id="dash-time"></span></div>
+      <div><h2>Dashboard <span class="live-badge"><span class="live-dot"></span>LIVE</span></h2><span id="dash-time"></span></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button class="btn-refresh" id="refresh-dashboard" onclick="refreshData('refresh-dashboard')"><span class="spin">&#8635;</span> Refresh</button>
         <button class="filter-btn" onclick="addDummyOrder()" style="border-color:var(--accent);color:var(--accent)">+ Simulasi Order</button>
@@ -698,7 +703,49 @@
   }
   // ── End IndexedDB helpers ─────────────────────────────────────
 
+  // ── MERGE semua order dari rbx_orders_u_* ke rbx_orders ─────────
+  function mergeAllCustomerOrders() {
+    const masterRaw = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+    const masterMap = {};
+    masterRaw.forEach(o => { masterMap[o.id] = o; });
+
+    let changed = false;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith('rbx_orders_u_')) continue;
+      try {
+        const userOrders = JSON.parse(localStorage.getItem(key) || '[]');
+        userOrders.forEach(o => {
+          if (!masterMap[o.id]) {
+            // Order baru dari customer yang belum ada di master
+            const clean = Object.assign({}, o);
+            if (clean.proofImage && clean.proofImage.startsWith('data:')) { delete clean.proofImage; clean.hasProof = true; }
+            if (clean.bukti && clean.bukti.startsWith('data:')) { delete clean.bukti; clean.hasProof = true; }
+            if (!clean.status) clean.status = 'pending';
+            if (clean.status === 'bukti_masuk') { clean.status = 'pending'; clean.hasProof = true; }
+            masterMap[clean.id] = clean;
+            changed = true;
+          } else {
+            // Update proof/status jika ada update dari customer
+            const existing = masterMap[o.id];
+            if (!existing.hasProof && (o.hasProof || o.proofImage || o.bukti)) {
+              existing.hasProof = true;
+              changed = true;
+            }
+          }
+        });
+      } catch(e) {}
+    }
+
+    if (changed) {
+      const merged = Object.values(masterMap);
+      try { localStorage.setItem('rbx_orders', JSON.stringify(merged)); } catch(e) {}
+    }
+    return changed;
+  }
+
   function loadOrders() {
+    mergeAllCustomerOrders(); // selalu merge dulu sebelum load
     return JSON.parse(localStorage.getItem('rbx_orders') || '[]').map(o => {
       if (!o.proofImage && !o.bukti) {
         const proof = getProofFromCache(o.id);
@@ -845,22 +892,73 @@
     }).join('');
   }
 
+  // ── REAL-TIME ORDER LISTENER ─────────────────────────────────
+  function setupRealtimeListener() {
+    // 1. BroadcastChannel — real-time antar tab di browser yang sama
+    try {
+      const bc = new BroadcastChannel('rbx_store_channel');
+      bc.onmessage = async (e) => {
+        if (e.data && (e.data.type === 'new_order' || e.data.type === 'proof_uploaded')) {
+          await preloadAllProofs();
+          const fresh = loadOrders();
+          const oldIds = new Set(orders.map(o => o.id));
+          const newOrders = fresh.filter(o => !oldIds.has(o.id));
+          orders = fresh;
+          if (newOrders.length > 0) newOrders.forEach(o => showNewOrderNotif(o));
+          else if (e.data.type === 'proof_uploaded') showToast('\u{1F4CE} Bukti transfer baru diterima dari ' + (e.data.username || 'customer') + '!', 'success');
+          renderAll();
+        }
+      };
+    } catch(e) {}
+
+    // 2. Storage event — menangkap perubahan dari tab/window lain
+    window.addEventListener('storage', async (evt) => {
+      if (!evt.key) return;
+      if (evt.key !== 'rbx_orders' && !evt.key.startsWith('rbx_orders_u_')) return;
+      await preloadAllProofs();
+      const fresh = loadOrders();
+      const oldIds = new Set(orders.map(o => o.id));
+      const newOrders = fresh.filter(o => !oldIds.has(o.id));
+      orders = fresh;
+      if (newOrders.length > 0) newOrders.forEach(o => showNewOrderNotif(o));
+      renderAll();
+    });
+  }
+
+  function showNewOrderNotif(o) {
+    showToast('\u{1F514} Order baru! ' + o.id + ' — ' + o.username + ' (' + (o.robux||0) + ' R\u24C8)', 'success');
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880; osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.35);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
+  }
+
   async function init() {
     loadEmailJSConfig();
     updateClock();
     setInterval(updateClock, 1000);
-    cleanupLocalStorageImages(); // hapus gambar base64 lama dari localStorage
+    cleanupLocalStorageImages();
     await preloadAllProofs();
     orders = loadOrders();
     renderAll();
+    setupRealtimeListener();
+    // Polling fallback setiap 3 detik
     setInterval(async () => {
       await preloadAllProofs();
       const fresh = loadOrders();
-      const oldLen = orders.length;
+      const oldIds = new Set(orders.map(o => o.id));
+      const newOrders = fresh.filter(o => !oldIds.has(o.id));
+      if (newOrders.length > 0) newOrders.forEach(o => showNewOrderNotif(o));
       orders = fresh;
-      if (fresh.length > oldLen) showToast('Ada order baru masuk!', 'success');
       renderAll();
-    }, 5000);
+    }, 3000);
   }
 
   function updateClock() {
@@ -1165,9 +1263,12 @@
     const btn = document.getElementById(btnId);
     if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 420); }
     await preloadAllProofs();
-    orders = loadOrders();
+    const oldLen = orders.length;
+    orders = loadOrders(); // mergeAllCustomerOrders() sudah dipanggil di dalam loadOrders()
     renderAll();
-    showToast('Data berhasil diperbarui.', 'success');
+    const diff = orders.length - oldLen;
+    if (diff > 0) showToast('\u{1F4E5} ' + diff + ' order baru ditemukan!', 'success');
+    else showToast('\u{2705} Data sudah terbaru.', 'success');
   }
 
   function saveOrders() {
