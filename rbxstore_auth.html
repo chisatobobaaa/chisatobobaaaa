@@ -740,11 +740,37 @@
 
 <script>
   // ── STORAGE HELPERS ──
-  function getUsers() { return JSON.parse(localStorage.getItem('rbx_users') || '[]'); }
-  function saveUsers(u) { localStorage.setItem('rbx_users', JSON.stringify(u)); }
+  const SUPA_URL = 'https://ddsvmskrbebblktsawxi.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkc3Ztc2tyYmViYmxrdHNhd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NTY0MDMsImV4cCI6MjA5NTAzMjQwM30.dqCrn61TQoWc-AmAT7VI33j_fh810m89eHKBnpAmH2w';
+
   function getSession() { return JSON.parse(localStorage.getItem('rbx_session') || 'null'); }
   function saveSession(u) { localStorage.setItem('rbx_session', JSON.stringify(u)); }
   function clearSession() { localStorage.removeItem('rbx_session'); }
+
+  function hashPass(pw) {
+    let hash = 0;
+    for (let i = 0; i < pw.length; i++) {
+      hash = ((hash << 5) - hash) + pw.charCodeAt(i);
+      hash |= 0;
+    }
+    return 'h' + Math.abs(hash).toString(36) + pw.length;
+  }
+
+  async function supaFetch(path, method = 'GET', body = null, extra = {}) {
+    const opts = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        ...extra
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(SUPA_URL + path, opts);
+    const text = await res.text();
+    return text ? JSON.parse(text) : [];
+  }
 
   // ── INIT ──
   window.addEventListener('load', () => {
@@ -775,7 +801,7 @@
   }
 
   // ── LOGIN ──
-  function doLogin() {
+  async function doLogin() {
     clearErrors();
     const identity = document.getElementById('login-identity').value.trim();
     const pass = document.getElementById('login-pass').value;
@@ -789,34 +815,39 @@
     btn.innerHTML = '<span class="spinner"></span>';
     btn.disabled = true;
 
-    setTimeout(() => {
-      const users = getUsers();
-      const user = users.find(u =>
-        (u.email.toLowerCase() === identity.toLowerCase() ||
-         u.username.toLowerCase() === identity.toLowerCase()) &&
-        u.password === hashPass(pass)
-      );
+    try {
+      const isEmail = identity.includes('@');
+      const query = isEmail
+        ? `/rest/v1/users?email=eq.${encodeURIComponent(identity.toLowerCase())}&password=eq.${encodeURIComponent(hashPass(pass))}&select=*`
+        : `/rest/v1/users?username=eq.${encodeURIComponent(identity.toLowerCase())}&password=eq.${encodeURIComponent(hashPass(pass))}&select=*`;
+
+      const users = await supaFetch(query);
 
       btn.innerHTML = 'Masuk ke Akun';
       btn.disabled = false;
 
-      if (!user) {
+      if (!users || users.length === 0) {
         showErr('err-login-pass', 'Email/username atau password salah');
         shakeInput('login-pass');
         return;
       }
 
-      const session = { username: user.username, email: user.email, firstName: user.firstName, lastName: user.lastName, wa: user.wa, joinedAt: user.joinedAt };
+      const user = users[0];
+      const session = { username: user.username, email: user.email, firstName: user.first_name, lastName: user.last_name, wa: user.wa, joinedAt: user.joined_at };
       saveSession(session);
       document.getElementById('logged-in-bar').classList.add('show');
       document.getElementById('logged-in-text').textContent = `Masuk sebagai @${session.username}`;
       showSuccess(session, false);
       showToast('✅ Berhasil masuk! Halo, ' + session.firstName, 't-success');
-    }, 800);
+    } catch(e) {
+      btn.innerHTML = 'Masuk ke Akun';
+      btn.disabled = false;
+      showErr('err-login-pass', 'Gagal terhubung ke server. Coba lagi.');
+    }
   }
 
   // ── REGISTER ──
-  function doRegister() {
+  async function doRegister() {
     clearErrors();
     const fn = document.getElementById('reg-firstname').value.trim();
     const ln = document.getElementById('reg-lastname').value.trim();
@@ -839,57 +870,60 @@
     if (!terms) { showToast('⚠️ Setujui syarat & ketentuan dulu', 't-error'); valid = false; }
     if (!valid) return;
 
-    const users = getUsers();
-    if (users.find(u => u.username.toLowerCase() === uname.toLowerCase())) {
-      showErr('err-reg-username', 'Username sudah dipakai'); return;
-    }
-    if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-      showErr('err-reg-email', 'Email sudah terdaftar'); return;
-    }
-
     const btn = document.getElementById('btn-register');
     btn.innerHTML = '<span class="spinner"></span>';
     btn.disabled = true;
 
-    setTimeout(() => {
+    try {
+      // Cek username duplikat
+      const checkUser = await supaFetch(`/rest/v1/users?username=eq.${encodeURIComponent(uname.toLowerCase())}&select=id`);
+      if (checkUser && checkUser.length > 0) {
+        showErr('err-reg-username', 'Username sudah dipakai');
+        btn.innerHTML = 'Buat Akun Sekarang'; btn.disabled = false; return;
+      }
+      // Cek email duplikat
+      const checkEmail = await supaFetch(`/rest/v1/users?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id`);
+      if (checkEmail && checkEmail.length > 0) {
+        showErr('err-reg-email', 'Email sudah terdaftar');
+        btn.innerHTML = 'Buat Akun Sekarang'; btn.disabled = false; return;
+      }
+
       const newUser = {
         id: 'USR-' + Math.floor(100000 + Math.random() * 900000),
-        firstName: fn, lastName: ln, username: uname,
-        email: email, wa: wa,
+        first_name: fn, last_name: ln,
+        username: uname.toLowerCase(),
+        email: email.toLowerCase(),
+        wa: wa,
         password: hashPass(pass),
-        joinedAt: Date.now(),
-        orders: []
+        joined_at: new Date().toISOString()
       };
-      users.push(newUser);
-      saveUsers(users);
 
-      const session = { username: newUser.username, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, wa: newUser.wa, joinedAt: newUser.joinedAt };
-      saveSession(session);
+      const result = await supaFetch('/rest/v1/users', 'POST', newUser, { 'Prefer': 'return=representation' });
 
       btn.innerHTML = 'Buat Akun Sekarang';
       btn.disabled = false;
 
+      const session = { username: newUser.username, email: newUser.email, firstName: fn, lastName: ln, wa: wa, joinedAt: newUser.joined_at };
+      saveSession(session);
+
       document.getElementById('logged-in-bar').classList.add('show');
       document.getElementById('logged-in-text').textContent = `Masuk sebagai @${session.username}`;
-
       showSuccess(session, true);
       showToast('🎉 Akun berhasil dibuat! Selamat datang, ' + fn, 't-success');
-    }, 1000);
+    } catch(e) {
+      btn.innerHTML = 'Buat Akun Sekarang';
+      btn.disabled = false;
+      showErr('err-reg-email', 'Gagal terhubung ke server. Coba lagi.');
+    }
   }
-
   // ── TAMU ──
   function loginTamu() {
     const uname = 'tamu_' + Math.floor(1000 + Math.random() * 9000);
-    const tamuUser = {
-      id: 'USR-TAMU-' + Date.now(),
-      firstName: 'Tamu', lastName: '',
+    const session = {
       username: uname, email: uname + '@tamu.rbx',
-      wa: '', password: '', joinedAt: Date.now(), orders: [], isTamu: true
+      firstName: 'Tamu', lastName: '',
+      joinedAt: new Date().toISOString(), isTamu: true
     };
-    const users = getUsers();
-    users.push(tamuUser);
-    saveUsers(users);
-    const session = { username: tamuUser.username, email: tamuUser.email, firstName: tamuUser.firstName, lastName: tamuUser.lastName, joinedAt: tamuUser.joinedAt, isTamu: true };
     saveSession(session);
     document.getElementById('logged-in-bar').classList.add('show');
     document.getElementById('logged-in-text').textContent = `Masuk sebagai @${session.username}`;
@@ -972,16 +1006,16 @@
 
   // ── CHECK USERNAME ──
   let usernameTimer;
-  function checkUsername(val) {
+  async function checkUsername(val) {
     clearTimeout(usernameTimer);
     const err = document.getElementById('err-reg-username');
     const input = document.getElementById('reg-username');
     err.classList.remove('show');
     input.classList.remove('error', 'success');
     if (!val || val.length < 3) return;
-    usernameTimer = setTimeout(() => {
-      const users = getUsers();
-      const taken = users.find(u => u.username.toLowerCase() === val.toLowerCase());
+    usernameTimer = setTimeout(async () => {
+      const taken_arr = await supaFetch(`/rest/v1/users?username=eq.${encodeURIComponent(val.toLowerCase())}&select=id`);
+      const taken = taken_arr && taken_arr.length > 0;
       if (taken) {
         input.classList.add('error');
         showErr('err-reg-username', '❌ Username sudah dipakai');
