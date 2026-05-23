@@ -1568,10 +1568,37 @@
             </div>
             <div class="order-bukti-section" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
               ${buktiSection}
+              ${!isFinished && o.status !== 'bukti_masuk' && !sudahKirim ? `
+              <button onclick="event.stopPropagation();cancelOrder('${o.id}')" style="width:100%;margin-top:8px;background:transparent;border:1px solid rgba(252,92,125,.35);border-radius:9px;padding:10px;color:#fc5c7d;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(252,92,125,.12)'" onmouseout="this.style.background='transparent'">
+                ✕ Batalkan Order
+              </button>` : ''}
             </div>
           </div>
         </div>`;
     }).join('');
+  }
+
+  async function cancelOrder(oid) {
+    if (!confirm('Yakin ingin membatalkan order ' + oid + '?\nOrder yang dibatalkan tidak bisa dikembalikan.')) return;
+
+    // Hapus dari semua localStorage (user key + global)
+    const uname = getCurrentUsername();
+    const uKey = userOrderKey(uname);
+    let uOrders = JSON.parse(localStorage.getItem(uKey) || '[]');
+    uOrders = uOrders.filter(o => o.id !== oid);
+    localStorage.setItem(uKey, JSON.stringify(uOrders));
+
+    try {
+      let all = JSON.parse(localStorage.getItem('rbx_orders') || '[]');
+      all = all.filter(o => o.id !== oid);
+      localStorage.setItem('rbx_orders', JSON.stringify(all));
+    } catch(e) {}
+
+    // Tandai sebagai cancelled di Supabase
+    await sbUpdateOrderStatus(oid, { status: 'cancelled' });
+
+    renderMyOrders();
+    showStatusToast('Order ' + oid + ' berhasil dibatalkan.', 'error');
   }
 
   function toggleOrderCard(oid) {
@@ -1920,6 +1947,14 @@
     let changed = false;
 
     supaOrders.forEach(sRow => {
+      // Skip order yang sudah dibatalkan customer
+      if (sRow.status === 'cancelled' || sRow.status === 'canceled') {
+        // Pastikan juga dihapus dari localStorage kalau masih ada
+        const idx = uOrders.findIndex(o => o.id === sRow.id);
+        if (idx !== -1) { uOrders.splice(idx, 1); changed = true; }
+        return;
+      }
+
       const local = uOrders.find(o => o.id === sRow.id);
       const newStatus = sRow.status === 'completed' ? 'success' : sRow.status;
       if (local && local.status !== newStatus) {
